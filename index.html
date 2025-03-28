@@ -1,3 +1,5 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,41 +18,41 @@
     <!-- KaTeX Math Rendering -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1tBCETKfPfpvsctZzmufuMAQK/GK" crossorigin="anonymous">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
-    <!-- Auto-render extension (optional, but simplifies finding/rendering math) -->
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
 
     <style>
-        /* ... (previous general styles: pulse, body, basic markdown etc.) ... */
-        body { font-family: 'Inter', sans-serif; overflow: hidden; /* Prevent body scroll */ }
+        /* General Styles */
+        @keyframes pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.5; } }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        body { font-family: 'Inter', sans-serif; overflow: hidden; }
         .message-bubble { max-width: min(calc(100% - 2rem), 52rem); word-wrap: break-word; }
 
-        /* --- Code Block Styling (Base + highlight.js) --- */
-        .message-content pre { background-color: #2d333b; border-radius: 0.5rem; margin: 0.75em 0; overflow-x: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.9em; line-height: 1.4; position: relative; /* For copy button */ }
+        /* Base Markdown Styling */
+        .message-content h1, .message-content h2, .message-content h3 { margin-top: 1em; margin-bottom: 0.5em; font-weight: 600; }
+        .message-content h1 { font-size: 1.5em; } .message-content h2 { font-size: 1.25em; } .message-content h3 { font-size: 1.1em; }
+        .message-content p { margin-bottom: 0.75em; line-height: 1.6; }
+        .message-content ul, .message-content ol { padding-left: 1.5rem; margin-bottom: 0.75em; }
+        .message-content ul { list-style-type: disc; } .message-content ol { list-style-type: decimal; }
+        .message-content li { margin-bottom: 0.25em; }
+        .message-content blockquote { border-left: 4px solid #d1d5db; padding-left: 1rem; margin: 0.75em 0; font-style: italic; color: #6b7280; }
+        .dark .message-content blockquote { border-left-color: #4b5563; color: #9ca3af; }
+        .message-content a { color: #3b82f6; text-decoration: underline; } .dark .message-content a { color: #60a5fa; }
+        .message-content hr { border-top: 1px solid #e5e7eb; margin: 1em 0; } .dark .message-content hr { border-top-color: #374151; }
+        .message-content table { border-collapse: collapse; margin: 1em 0; width: auto; }
+        .message-content th, .message-content td { border: 1px solid #d1d5db; padding: 0.4em 0.8em; } .dark .message-content th, .dark .message-content td { border-color: #4b5563; }
+        .message-content th { background-color: #f9fafb; font-weight: 600; } .dark .message-content th { background-color: #374151; }
+
+        /* Code Block Styling */
+        .message-content pre { background-color: #2d333b; border-radius: 0.5rem; margin: 0.75em 0; overflow-x: auto; font-family: 'Courier New', Courier, monospace; font-size: 0.9em; line-height: 1.4; position: relative; }
         .message-content pre code.hljs { padding: 1em; display: block; }
-        /* Inline code */
         .message-content code:not(pre code) { background-color: rgba(175, 184, 193, 0.2); color: inherit; padding: 0.2em 0.4em; margin: 0 0.1em; border-radius: 0.25rem; font-size: 0.875em; font-family: 'Courier New', Courier, monospace; }
         .dark .message-content code:not(pre code) { background-color: rgba(240, 246, 252, 0.15); }
-        /* Copy Button for Code Blocks */
-        .copy-code-button {
-            position: absolute;
-            top: 0.5em;
-            right: 0.5em;
-            padding: 0.25em 0.5em;
-            font-size: 0.75em;
-            background-color: rgba(255, 255, 255, 0.1);
-            color: #ccc;
-            border: 1px solid rgba(255, 255, 255, 0.2);
-            border-radius: 0.25rem;
-            cursor: pointer;
-            opacity: 0;
-            transition: opacity 0.2s ease-in-out;
-        }
+        .copy-code-button { position: absolute; top: 0.5em; right: 0.5em; padding: 0.25em 0.5em; font-size: 0.75em; background-color: rgba(255, 255, 255, 0.1); color: #ccc; border: 1px solid rgba(255, 255, 255, 0.2); border-radius: 0.25rem; cursor: pointer; opacity: 0; transition: opacity 0.2s ease-in-out; }
         .message-content pre:hover .copy-code-button { opacity: 1; }
-        .copy-code-button:hover { background-color: rgba(255, 255, 255, 0.2); }
-        .copy-code-button:active { background-color: rgba(255, 255, 255, 0.3); }
+        .copy-code-button:hover { background-color: rgba(255, 255, 255, 0.2); } .copy-code-button:active { background-color: rgba(255, 255, 255, 0.3); }
 
-        /* --- Thinking Block Styling --- */
-        .thinking-block { margin-top: 1em; border-left: 3px solid #fbbf24; background-color: #fefce8; padding: 0; border-radius: 0 4px 4px 0; }
+        /* Thinking Block Styling */
+        .thinking-block { margin-bottom: 1em; /* Moved margin to bottom */ border-left: 3px solid #fbbf24; background-color: #fefce8; padding: 0; border-radius: 0 4px 4px 0; }
         .dark .thinking-block { border-left-color: #f59e0b; background-color: rgba(55, 48, 16, 0.3); }
         .thinking-block summary { cursor: pointer; padding: 0.5em 1em; font-weight: 500; color: #ca8a04; font-size: 0.8rem; list-style: none; display: flex; align-items: center; }
         .dark .thinking-block summary { color: #fcd34d; }
@@ -58,37 +60,19 @@
         .thinking-block[open] > summary::before { transform: rotate(90deg); }
         .thinking-block-content { padding: 0.5em 1em 1em 1.5em; font-size: 0.85rem; color: #78350f; opacity: 0.9; border-top: 1px dashed #fde68a; }
         .dark .thinking-block-content { color: #fef3c7; border-top-color: #78350f; }
-        .thinking-block-content pre { font-size: 0.8em; padding: 0.5em; background-color: rgba(0,0,0,0.05); white-space: pre-wrap; word-break: break-all; } /* Wrap think content */
+        .thinking-block-content pre { font-size: 0.8em; padding: 0.5em; background-color: rgba(0,0,0,0.05); white-space: pre-wrap; word-break: break-all; }
         .dark .thinking-block-content pre { background-color: rgba(255,255,255,0.05); }
 
-        /* --- KaTeX Styling --- */
-        .message-content .katex-display { /* Display math $$...$$ */
-            overflow-x: auto;
-            overflow-y: hidden;
-            padding: 0.5em 0;
-        }
-        .message-content .katex { /* Inline math $...$ */
-            font-size: 1.05em; /* Slightly larger inline math */
-        }
+        /* KaTeX Styling */
+        .message-content .katex-display { overflow-x: auto; overflow-y: hidden; padding: 0.5em 0; }
+        .message-content .katex { font-size: 1.05em; }
 
-        /* --- Blinking Cursor --- */
-        .blinking-cursor {
-            display: inline-block;
-            width: 8px;
-            height: 1.1em; /* Match line height */
-            background-color: currentColor;
-            margin-left: 1px;
-            border-radius: 1px;
-            animation: blink 1s step-end infinite;
-            vertical-align: text-bottom; /* Align better with text */
-        }
-        @keyframes blink {
-            50% { opacity: 0; }
-        }
+        /* Blinking Cursor */
+        .blinking-cursor { display: inline-block; width: 8px; height: 1.1em; background-color: currentColor; margin-left: 1px; border-radius: 1px; animation: blink 1s step-end infinite; vertical-align: text-bottom; }
+        @keyframes blink { 50% { opacity: 0; } }
     </style>
 </head>
 <body class="h-full bg-gray-100 dark:bg-gray-900 font-sans">
-    <!-- HTML structure remains the same -->
     <div class="flex flex-col h-full">
          <header class="bg-white dark:bg-gray-800 border-b dark:border-gray-700 p-4 flex items-center justify-between shadow-sm">
             <div class="flex items-center">
@@ -126,11 +110,11 @@
             </aside>
 
              <main class="flex-1 flex flex-col overflow-hidden bg-white dark:bg-gray-900">
-                {/* Chat Box - Make sure it allows overflow */}
+                <!-- Removed stray comments from here -->
                 <div id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-4">
                     <div class="text-center text-gray-500 dark:text-gray-400 py-8 text-sm">Start a new conversation</div>
                 </div>
-                 {/* Input Area */}
+                <!-- Removed stray comments from here -->
                  <div class="bg-white dark:bg-gray-800 border-t dark:border-gray-700 p-4">
                     <div id="image-preview" class="flex gap-2 mb-2 overflow-x-auto pb-2"></div>
                     <div class="relative message-bubble mx-auto flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-2xl px-2 py-1 border border-gray-200 dark:border-gray-600">
@@ -154,78 +138,103 @@
 
     <script>
         // --- Configuration ---
-        const config = { /* ... same ... */
+        const config = {
             MAX_INPUT_LENGTH: 4000,
             API_ENDPOINT: "https://text.pollinations.ai/openai/v1/chat/completions",
-            MODELS: { 'openai-large':{name:'OpenAI Large',premium:true}, openai:{name:'OpenAI',premium:false}, 'qwen-reasoning':{name:'Qwen Reasoning',premium:false}, gemini:{name:'Gemini',premium:true}, 'gemini-thinking':{name:'Gemini Thinking',premium:true} },
+            MODELS: {
+                'openai-large': { name: 'OpenAI Large', premium: true },
+                'openai': { name: 'OpenAI', premium: false },
+                'qwen-reasoning': { name: 'Qwen Reasoning', premium: false },
+                'gemini': { name: 'Gemini', premium: true },
+                'gemini-thinking': { name: 'Gemini Thinking', premium: true },
+            },
         };
         const VISION_MODELS = ['openai-large', 'openai'];
 
         // --- DOM Elements ---
-        const elements = { /* ... same ... */
-            chatBox: document.getElementById('chat-box'), userInput: document.getElementById('user-input'), sendBtn: document.getElementById('send-btn'), newChatBtn: document.getElementById('new-chat'), modelSelect: document.getElementById('model-select'), imageUpload: document.getElementById('image-upload'), sidebar: document.getElementById('sidebar'), menuBtn: document.getElementById('menu-btn'), imagePreview: document.getElementById('image-preview'), chatHistory: document.getElementById('chat-history')
+        const elements = {
+            chatBox: document.getElementById('chat-box'),
+            userInput: document.getElementById('user-input'),
+            sendBtn: document.getElementById('send-btn'),
+            newChatBtn: document.getElementById('new-chat'),
+            modelSelect: document.getElementById('model-select'),
+            imageUpload: document.getElementById('image-upload'),
+            sidebar: document.getElementById('sidebar'),
+            menuBtn: document.getElementById('menu-btn'),
+            imagePreview: document.getElementById('image-preview'),
+            chatHistory: document.getElementById('chat-history')
         };
 
         // --- Populate Model Select ---
-        function populateModelSelect() { /* ... same ... */
-            elements.modelSelect.innerHTML=''; const keys=Object.keys(config.MODELS); const ordered=['openai-large','openai',...keys.filter(k=>k!=='openai-large'&&k!=='openai')]; ordered.forEach(id=>{if(config.MODELS[id]){const o=document.createElement('option');o.value=id;o.textContent=config.MODELS[id].name+(config.MODELS[id].premium?' ✨':'');elements.modelSelect.appendChild(o);}}); if(ordered.length>0&&config.MODELS[ordered[0]])elements.modelSelect.value=ordered[0]; else if(keys.length>0)elements.modelSelect.value=keys[0];
+        function populateModelSelect() {
+            elements.modelSelect.innerHTML = '';
+            const modelKeys = Object.keys(config.MODELS);
+            const orderedKeys = [
+                'openai-large', 'openai',
+                ...modelKeys.filter(k => k !== 'openai-large' && k !== 'openai')
+            ];
+            orderedKeys.forEach(modelId => {
+                 if (config.MODELS[modelId]) {
+                    const option = document.createElement('option');
+                    option.value = modelId;
+                    option.textContent = config.MODELS[modelId].name + (config.MODELS[modelId].premium ? ' ✨' : '');
+                    elements.modelSelect.appendChild(option);
+                 }
+            });
+            if (orderedKeys.length > 0 && config.MODELS[orderedKeys[0]]) {
+                elements.modelSelect.value = orderedKeys[0];
+            } else if (modelKeys.length > 0) {
+                 elements.modelSelect.value = modelKeys[0];
+            }
         }
 
         // --- Application State ---
-        let state = { /* ... same ... */
-            isProcessing: false, messages: JSON.parse(localStorage.getItem('chatMessages') || '[]'), uploadedImages: [], currentAbortController: null
+        let state = {
+            isProcessing: false,
+            messages: JSON.parse(localStorage.getItem('chatMessages') || '[]'),
+            uploadedImages: [],
+            currentAbortController: null
         };
 
         // --- Security, Utilities, Markdown, Math ---
         const utilities = {
-             extractAndCleanThinkBlocks: (rawContent) => { /* ... same ... */
-                  if(typeof rawContent!=='string')return{cleanedContent:'',thinkHtml:''};const blocks=[];const regex=/<think>([\s\S]*?)<\/think>/g;const cleaned=rawContent.replace(regex,(_,c)=>{if(c.trim())blocks.push(c.trim());return '';}).trim();let html='';if(blocks.length>0){html='<details class="thinking-block"><summary>Show Thoughts</summary><div class="thinking-block-content">';blocks.forEach((b,i)=>{html+=`<pre>${security.basicSanitize(b)}</pre>`;if(i<blocks.length-1)html+='<hr class="my-2 border-dashed border-amber-300 dark:border-amber-700">';});html+='</div></details>';}return{cleanedContent:cleaned,thinkHtml:html};
+             extractAndCleanThinkBlocks: (rawContent) => {
+                  if (typeof rawContent !== 'string') return { cleanedContent: '', thinkHtml: '' };
+                  const blocks = [];
+                  const regex = /<think>([\s\S]*?)<\/think>/g;
+                  const cleaned = rawContent.replace(regex, (_, c) => { if (c.trim()) blocks.push(c.trim()); return ''; }).trim();
+                  let html = '';
+                  if (blocks.length > 0) {
+                      html = '<details class="thinking-block"><summary>Show Thoughts</summary><div class="thinking-block-content">';
+                      blocks.forEach((b, i) => {
+                          html += `<pre>${security.basicSanitize(b)}</pre>`; // Sanitize content inside pre
+                          if (i < blocks.length - 1) html += '<hr class="my-2 border-dashed border-amber-300 dark:border-amber-700">';
+                      });
+                      html += '</div></details>';
+                  }
+                  return { cleanedContent: cleaned, thinkHtml: html };
              },
-             // New: Render math using KaTeX auto-render extension
              renderMathInElement: (element) => {
                  if (typeof renderMathInElement === 'function') {
                     try {
                          renderMathInElement(element, {
-                             delimiters: [
-                                 {left: '$$', right: '$$', display: true},
-                                 {left: '$', right: '$', display: false},
-                                 {left: '\\(', right: '\\)', display: false}, // Allow \( ... \)
-                                 {left: '\\[', right: '\\]', display: true}   // Allow \[ ... \]
-                             ],
-                             throwOnError: false // Don't stop rendering on error
+                             delimiters: [ {left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}, {left: '\\(', right: '\\)', display: false}, {left: '\\[', right: '\\]', display: true} ],
+                             throwOnError: false
                          });
-                    } catch (error) {
-                        console.error("KaTeX auto-render error:", error);
-                    }
-                 } else {
-                     console.warn("KaTeX auto-render function not available yet.");
-                 }
+                    } catch (error) { console.error("KaTeX auto-render error:", error); }
+                 } else { console.warn("KaTeX auto-render function not available yet."); }
              },
-             // New: Add Copy Button functionality
              addCopyButtonsToCodeBlocks: (parentElement) => {
                 parentElement.querySelectorAll('pre').forEach(pre => {
-                    // Avoid adding button if it already exists or inside think block
-                    if (pre.querySelector('.copy-code-button') || pre.closest('.thinking-block-content')) {
-                        return;
-                    }
-
+                    if (pre.querySelector('.copy-code-button') || pre.closest('.thinking-block-content')) return;
                     const codeElement = pre.querySelector('code');
-                    if (!codeElement) return; // Need a code element inside
-
+                    if (!codeElement) return;
                     const button = document.createElement('button');
-                    button.className = 'copy-code-button';
-                    button.textContent = 'Copy';
+                    button.className = 'copy-code-button'; button.textContent = 'Copy';
                     button.onclick = () => {
                         navigator.clipboard.writeText(codeElement.textContent)
-                            .then(() => {
-                                button.textContent = 'Copied!';
-                                setTimeout(() => { button.textContent = 'Copy'; }, 2000);
-                            })
-                            .catch(err => {
-                                console.error('Failed to copy code:', err);
-                                button.textContent = 'Error';
-                                setTimeout(() => { button.textContent = 'Copy'; }, 2000);
-                            });
+                            .then(() => { button.textContent = 'Copied!'; setTimeout(() => { button.textContent = 'Copy'; }, 2000); })
+                            .catch(err => { console.error('Failed to copy:', err); button.textContent = 'Error'; setTimeout(() => { button.textContent = 'Copy'; }, 2000); });
                     };
                     pre.appendChild(button);
                 });
@@ -233,65 +242,57 @@
         };
 
         const security = {
-            basicSanitize: (input) => { /* ... same ... */
-                 if(typeof input!=='string')return''; const t=document.createElement('div');t.textContent=input;return t.innerHTML.replace(/\n/g,'<br>');
+            basicSanitize: (input) => {
+                 if (typeof input !== 'string') return '';
+                 const t = document.createElement('div'); t.textContent = input; return t.innerHTML.replace(/\n/g, '<br>');
             },
-            // Modified: RenderMarkdown now only handles Markdown parsing and highlighting. KaTeX is handled separately.
             renderMarkdown: (markdownContent) => {
                 if (typeof markdownContent !== 'string') return '';
                 try {
-                    if (typeof marked === 'undefined') throw new Error('Marked library not loaded!');
-                    if (typeof DOMPurify === 'undefined') throw new Error('DOMPurify library not loaded!');
-                    if (typeof hljs === 'undefined') console.warn('highlight.js not loaded');
+                    if (typeof marked === 'undefined') throw new Error('Marked lib missing!');
+                    if (typeof DOMPurify === 'undefined') throw new Error('DOMPurify missing!');
+                    if (typeof hljs === 'undefined') console.warn('hljs missing');
 
-                    // 1. Parse Markdown (KaTeX delimiters should pass through)
                     const rawHtml = marked.parse(markdownContent, { breaks: true, gfm: true });
-
-                    // 2. Sanitize (Allow KaTeX classes if needed - usually defaults are ok)
                     const cleanHtml = DOMPurify.sanitize(rawHtml, { USE_PROFILES: { html: true }, ADD_ATTR: ['target', 'class'] });
-
-                    // 3. Apply Syntax Highlighting + Target Blank
                     const tempDiv = document.createElement('div');
                     tempDiv.innerHTML = cleanHtml;
                     tempDiv.querySelectorAll('a').forEach(a => { if (a.href && !a.target) { a.target = '_blank'; a.rel = 'noopener noreferrer'; } });
                     if (typeof hljs !== 'undefined') {
-                        tempDiv.querySelectorAll('pre code').forEach((block) => {
-                            try { hljs.highlightElement(block); } catch (e) { console.error("Highlight.js error:", e); }
-                        });
+                        tempDiv.querySelectorAll('pre code').forEach((block) => { try { hljs.highlightElement(block); } catch (e) { console.error("hljs error:", e); } });
                     }
-                    // ** KaTeX rendering is now done AFTER this HTML is added to the DOM **
                     return tempDiv.innerHTML;
                 } catch (error) {
-                    console.error("Markdown/Highlighting error:", error);
-                    return security.basicSanitize(markdownContent); // Fallback
+                    console.error("Markdown/Highlight err:", error); return security.basicSanitize(markdownContent);
                 }
             },
-            validateInput: (input) => { /* ... same ... */
-                 if(input.length>config.MAX_INPUT_LENGTH)throw new Error(`Input > ${config.MAX_INPUT_LENGTH} chars`); return true;
+            validateInput: (input) => {
+                 if (input.length > config.MAX_INPUT_LENGTH) throw new Error(`Input > ${config.MAX_INPUT_LENGTH} chars`); return true;
             }
         };
 
         // --- UI Management ---
         const ui = {
-            // Modified: createMessageElement only sets the basic structure and Markdown/Think HTML.
-            // KaTeX and Copy buttons are added AFTER insertion into DOM.
             createMessageElement: (processedResult, isUser = false, role = 'assistant') => {
                 const messageWrapper = document.createElement('div');
                 messageWrapper.className = `flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`;
                 const bubble = document.createElement('div');
                 bubble.className = `message-bubble rounded-lg p-3.5 text-sm shadow ${isUser ? 'ml-auto bg-blue-600 text-white' : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}`;
                 const contentDiv = document.createElement('div');
-                contentDiv.className = 'message-content flex flex-col gap-2'; // Keep gap
+                contentDiv.className = 'message-content flex flex-col gap-0'; // Use gap-0 or adjust based on actual content spacing needed
 
-                if (role === 'error') { /* ... error handling same ... */
-                     bubble.classList.remove('bg-white','dark:bg-gray-700','bg-blue-600');bubble.classList.add('bg-red-100','dark:bg-red-800','text-red-800','dark:text-red-100','border','border-red-200','dark:border-red-600');contentDiv.innerHTML=`⚠️ ${security.basicSanitize(processedResult)}`;
-                 } else if (isUser && Array.isArray(processedResult)) { /* ... user message same ... */
-                    processedResult.forEach(item=>{if(item.type==='text'){const t=document.createElement('div');t.innerHTML=security.basicSanitize(item.text||"");contentDiv.appendChild(t);}else if(item.type==='image_url'&&item.image_url?.url){const i=document.createElement('img');i.src=item.image_url.url;i.alt="User image";i.className='max-w-xs h-auto rounded-md mt-1 border dark:border-gray-600';i.style.maxHeight='200px';contentDiv.appendChild(i);}});
+                if (role === 'error') {
+                     bubble.classList.remove('bg-white','dark:bg-gray-700','bg-blue-600'); bubble.classList.add('bg-red-100','dark:bg-red-800','text-red-800','dark:text-red-100','border','border-red-200','dark:border-red-600'); contentDiv.innerHTML=`⚠️ ${security.basicSanitize(processedResult)}`;
+                 } else if (isUser && Array.isArray(processedResult)) {
+                    processedResult.forEach(item => {
+                        if (item.type === 'text') { const t = document.createElement('div'); t.innerHTML = security.basicSanitize(item.text || ""); contentDiv.appendChild(t); }
+                        else if (item.type === 'image_url' && item.image_url?.url) { const i = document.createElement('img'); i.src = item.image_url.url; i.alt = "User image"; i.className = 'max-w-xs h-auto rounded-md mt-1 border dark:border-gray-600'; i.style.maxHeight = '200px'; contentDiv.appendChild(i); }
+                    });
                 } else if (role === 'assistant' && typeof processedResult === 'object' && processedResult.renderedMarkdown !== undefined) {
-                     // Set combined Markdown + Think HTML
-                     contentDiv.innerHTML = processedResult.renderedMarkdown + processedResult.thinkHtml;
+                     // **MODIFIED: Render thinkHtml BEFORE renderedMarkdown**
+                     contentDiv.innerHTML = processedResult.thinkHtml + processedResult.renderedMarkdown;
                 } else if (role === 'loading' && typeof processedResult === 'string') {
-                     contentDiv.innerHTML = `<span class="streaming-text"></span><span class="blinking-cursor"></span>`; // Use spans for better control
+                     contentDiv.innerHTML = `<span class="streaming-text"></span><span class="blinking-cursor"></span>`;
                 } else {
                      console.warn("createMessageElement unexpected:", processedResult); contentDiv.innerHTML = security.basicSanitize(String(processedResult));
                 }
@@ -300,95 +301,100 @@
                 messageWrapper.appendChild(bubble);
                 return messageWrapper;
             },
-             // Modified: updateStreamingMessage uses targeted updates for smoothness
              updateStreamingMessage: (element, deltaContent, isFinished = false) => {
                  const contentDiv = element.querySelector('.message-content');
                  const textSpan = element.querySelector('.streaming-text');
                  const cursorSpan = element.querySelector('.blinking-cursor');
-                 if (!contentDiv || !textSpan || !cursorSpan) return; // Element structure changed?
+                 if (!contentDiv || !textSpan || !cursorSpan) return;
 
-                 const wasScrolledToBottom = ui.isScrolledToBottom(10); // Check if near bottom (within 10px)
+                 const wasScrolledToBottom = ui.isScrolledToBottom(10);
 
                  if (isFinished) {
-                     // Remove cursor, process final content (think, markdown, highlight, katex, copy buttons)
-                     cursorSpan.remove();
-                     textSpan.remove(); // Remove the temporary text span
-
-                     const finalRawContent = textSpan.textContent; // Get accumulated raw text
+                     cursorSpan.remove(); textSpan.remove();
+                     const finalRawContent = textSpan.textContent;
                      const { cleanedContent, thinkHtml } = utilities.extractAndCleanThinkBlocks(finalRawContent);
-                     const renderedMarkdown = security.renderMarkdown(cleanedContent); // Render Markdown + Highlight.js
+                     const renderedMarkdown = security.renderMarkdown(cleanedContent);
 
-                     contentDiv.innerHTML = renderedMarkdown + thinkHtml; // Set final HTML
+                     // **MODIFIED: Render thinkHtml BEFORE renderedMarkdown**
+                     contentDiv.innerHTML = thinkHtml + renderedMarkdown;
 
-                     // Post-render actions: KaTeX and Copy Buttons
                      utilities.renderMathInElement(contentDiv);
                      utilities.addCopyButtonsToCodeBlocks(contentDiv);
 
                  } else {
-                     // Append sanitized delta to the text span
-                     // Basic sanitization is enough here, as final render handles complex stuff
-                     const temp = document.createElement('div');
-                     temp.textContent = deltaContent;
-                     textSpan.innerHTML += temp.innerHTML.replace(/\n/g, '<br>'); // Append incrementally
-
+                     const temp = document.createElement('div'); temp.textContent = deltaContent;
+                     textSpan.innerHTML += temp.innerHTML.replace(/\n/g, '<br>');
                  }
 
-                 // Smart Scrolling: Only scroll if user was already near the bottom
                  if (wasScrolledToBottom) {
-                    // Use requestAnimationFrame to scroll after the DOM update is likely painted
-                    requestAnimationFrame(() => {
-                         ui.scrollToBottom();
-                    });
+                    requestAnimationFrame(() => { ui.scrollToBottom(); });
                  }
             },
              createStreamingMessageElement: () => {
-                 // createMessageElement now includes spans for text and cursor when role='loading'
-                const element = ui.createMessageElement('', false, 'loading'); // Pass empty string
+                const element = ui.createMessageElement('', false, 'loading');
                 element.id = 'streaming-message';
                 elements.chatBox.appendChild(element);
-                ui.scrollToBottom(); // Initial scroll
+                ui.scrollToBottom();
                 return element;
             },
-            // New: Check if chatbox is scrolled near the bottom
             isScrolledToBottom: (threshold = 5) => {
                 const el = elements.chatBox;
-                // Use Math.abs to handle potential floating point inaccuracies
                 return Math.abs(el.scrollHeight - el.scrollTop - el.clientHeight) < threshold;
             },
-            // ... (showTemporaryLoading, removeElementById, updateModelIndicator, scrollToBottom, toggleSendButton, clearInput, adjustTextAreaHeight, displayError, addImagePreview, updateChatHistoryUI remain largely the same) ...
-            updateModelIndicator: () => { if(!elements.modelSelect.value||!config.MODELS[elements.modelSelect.value]){console.warn("Model select invalid.");document.title="Fronix";return;} const m=config.MODELS[elements.modelSelect.value];document.title=`${m.name} - Fronix`; },
-            scrollToBottom: () => { elements.chatBox.scrollTo({top:elements.chatBox.scrollHeight, behavior:'smooth'}); }, // Keep smooth scroll
-            toggleSendButton: (e) => { elements.sendBtn.disabled=!e; },
-            clearInput: () => { elements.userInput.value=''; state.uploadedImages=[]; elements.imagePreview.innerHTML=''; ui.adjustTextAreaHeight(); ui.toggleSendButton(false); },
-            adjustTextAreaHeight: () => { elements.userInput.style.height='auto'; const maxH=parseInt(elements.userInput.style.maxHeight||'200px',10); const scrollH=elements.userInput.scrollHeight; const newH=Math.min(scrollH,maxH)+(scrollH>maxH?0:2); elements.userInput.style.height=`${newH}px`; },
-            displayError: (m) => { const d=ui.createMessageElement(m,false,'error'); elements.chatBox.appendChild(d); ui.scrollToBottom(); },
-            addImagePreview: (n, s) => { /* ... same ... */ const c=document.createElement('div');c.className='relative group flex-shrink-0'; const i=document.createElement('img');i.src=s;i.alt=n;i.title=n;i.className='w-16 h-16 object-cover rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer';i.onclick=()=>window.open(s,'_blank'); const b=document.createElement('button');b.innerHTML='&times;';b.title="Remove image";b.className='absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100';b.onclick=(e)=>{e.stopPropagation();state.uploadedImages=state.uploadedImages.filter(img=>img.base64!==s);c.remove();if(elements.userInput.value.trim()===''&&state.uploadedImages.length===0)ui.toggleSendButton(false);if(state.uploadedImages.length===0)elements.imageUpload.value='';}; c.appendChild(i);c.appendChild(b);elements.imagePreview.appendChild(c);ui.toggleSendButton(true); },
-            updateChatHistoryUI: () => { console.log("UI: History UI update (not implemented)"); }
+            updateModelIndicator: () => {
+                 if (!elements.modelSelect.value || !config.MODELS[elements.modelSelect.value]) { console.warn("Model select invalid."); document.title = "Fronix"; return; }
+                 const m = config.MODELS[elements.modelSelect.value]; document.title = `${m.name} - Fronix`;
+            },
+            scrollToBottom: () => { elements.chatBox.scrollTo({ top: elements.chatBox.scrollHeight, behavior: 'smooth' }); },
+            toggleSendButton: (enabled) => { elements.sendBtn.disabled = !enabled; },
+            clearInput: () => { elements.userInput.value = ''; state.uploadedImages = []; elements.imagePreview.innerHTML = ''; ui.adjustTextAreaHeight(); ui.toggleSendButton(false); },
+            adjustTextAreaHeight: () => { elements.userInput.style.height = 'auto'; const maxH = parseInt(elements.userInput.style.maxHeight || '200px', 10); const scrollH = elements.userInput.scrollHeight; const newH = Math.min(scrollH, maxH) + (scrollH > maxH ? 0 : 2); elements.userInput.style.height = `${newH}px`; },
+            displayError: (message) => { const errDiv = ui.createMessageElement(message, false, 'error'); elements.chatBox.appendChild(errDiv); ui.scrollToBottom(); },
+            addImagePreview: (name, src) => {
+                 const container = document.createElement('div'); container.className = 'relative group flex-shrink-0';
+                 const img = document.createElement('img'); img.src = src; img.alt = name; img.title = name; img.className = 'w-16 h-16 object-cover rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer'; img.onclick = () => window.open(src, '_blank');
+                 const removeBtn = document.createElement('button'); removeBtn.innerHTML = '&times;'; removeBtn.title = "Remove image"; removeBtn.className = 'absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100';
+                 removeBtn.onclick = (e) => { e.stopPropagation(); state.uploadedImages = state.uploadedImages.filter(img => img.base64 !== src); container.remove(); if (elements.userInput.value.trim() === '' && state.uploadedImages.length === 0) ui.toggleSendButton(false); if (state.uploadedImages.length === 0) elements.imageUpload.value = ''; };
+                 container.appendChild(img); container.appendChild(removeBtn); elements.imagePreview.appendChild(container); ui.toggleSendButton(true);
+            },
+             updateChatHistoryUI: () => { console.log("UI: History UI update (not implemented)"); }
         };
-
 
         // --- Chat Logic ---
         const chat = {
-            sendMessage: async () => { /* ... setup & user message logic same ... */
-                 if (state.isProcessing) return; let userText=elements.userInput.value.trim(); let msgContent=[]; if (!userText && state.uploadedImages.length===0) return; state.isProcessing=true; ui.toggleSendButton(false); const model=elements.modelSelect.value; const vision=VISION_MODELS.includes(model); if (state.uploadedImages.length>0){ if(!vision){ui.displayError(`Model '${config.MODELS[model].name}' doesn't support images.`);state.isProcessing=false;ui.toggleSendButton(userText!==''||state.uploadedImages.length>0);return;} state.uploadedImages.forEach(img=>{msgContent.push({type:'image_url',image_url:{url:img.base64,detail:"auto"}});}); } if(userText){try{security.validateInput(userText);msgContent.push({type:'text',text:userText});}catch(e){ui.displayError(e.message);state.isProcessing=false;ui.toggleSendButton(true);return;}} const userMsg={role:'user',content:msgContent}; state.messages.push(userMsg); if(elements.chatBox.querySelector('.text-center'))elements.chatBox.innerHTML=''; const userDiv=ui.createMessageElement(msgContent, true, 'user'); elements.chatBox.appendChild(userDiv); ui.clearInput(); ui.scrollToBottom();
+            sendMessage: async () => {
+                 if (state.isProcessing) return;
+                 let userText = elements.userInput.value.trim();
+                 let msgContent = [];
+                 if (!userText && state.uploadedImages.length === 0) return;
+                 state.isProcessing = true; ui.toggleSendButton(false);
+                 const model = elements.modelSelect.value;
+                 const vision = VISION_MODELS.includes(model);
+                 if (state.uploadedImages.length > 0) {
+                     if (!vision) { ui.displayError(`Model '${config.MODELS[model].name}' doesn't support image input.`); state.isProcessing = false; ui.toggleSendButton(userText !== '' || state.uploadedImages.length > 0); return; }
+                     state.uploadedImages.forEach(img => { msgContent.push({ type: 'image_url', image_url: { url: img.base64, detail: "auto" } }); });
+                 }
+                 if (userText) { try { security.validateInput(userText); msgContent.push({ type: 'text', text: userText }); } catch (e) { ui.displayError(e.message); state.isProcessing = false; ui.toggleSendButton(true); return; } }
+                 const userMsg = { role: 'user', content: msgContent }; state.messages.push(userMsg);
+                 if (elements.chatBox.querySelector('.text-center')) elements.chatBox.innerHTML = '';
+                 const userDiv = ui.createMessageElement(msgContent, true, 'user'); elements.chatBox.appendChild(userDiv);
+                 ui.clearInput(); ui.scrollToBottom();
 
-                // --- Prepare for API Call ---
+                // Prepare for API Call
                 localStorage.setItem('chatMessages', JSON.stringify(state.messages));
-                const assistantMessageDiv = ui.createStreamingMessageElement(); // Creates structure with spans
-                // We no longer need assistantRawAccumulatedContent here, handled within updateStreamingMessage
+                const assistantMessageDiv = ui.createStreamingMessageElement();
+                let accumulatedDeltaContentForFinish = '';
 
                 state.currentAbortController = new AbortController();
                 try {
                     const requestBody = { model: model, messages: state.messages, stream: true, referrer: "Fronix.ai" };
                     console.log('Sending:', JSON.stringify(requestBody, null, 2));
                     const response = await fetch(config.API_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestBody), signal: state.currentAbortController.signal });
-                    if (!response.ok) { let eBody=await response.text(); try {eBody=JSON.stringify(JSON.parse(eBody),null,2);} catch(e){} console.error("API Error Body:",eBody); throw new Error(`API Error: ${response.status} ${response.statusText}.`); }
+                    if (!response.ok) { let eBody = await response.text(); try { eBody = JSON.stringify(JSON.parse(eBody), null, 2); } catch (e) { } console.error("API Error Body:", eBody); throw new Error(`API Error: ${response.status} ${response.statusText}.`); }
                     const cType = response.headers.get('content-type'); if (!cType || !cType.includes('text/event-stream') || !response.body) { throw new Error('Expected text/event-stream.'); }
 
-                    // --- Process Streaming Response ---
+                    // Process Streaming Response
                     const reader = response.body.getReader(); const decoder = new TextDecoder('utf-8'); let buffer = '';
-                    let accumulatedDeltaContentForFinish = ''; // Accumulate raw content ONLY for final save/processing
-
                     while (true) {
                         const { value, done } = await reader.read(); if (done) { console.log('Stream done.'); break; }
                         buffer += decoder.decode(value, { stream: true }); let lines = buffer.split('\n'); buffer = lines.pop() || '';
@@ -397,44 +403,42 @@
                             try {
                                 const parsed = JSON.parse(data); const delta = parsed.choices?.[0]?.delta; if (!delta || !delta.content) continue;
                                 const deltaContent = delta.content;
-                                accumulatedDeltaContentForFinish += deltaContent; // Save raw delta
-                                // Update UI incrementally with the delta
+                                accumulatedDeltaContentForFinish += deltaContent;
                                 ui.updateStreamingMessage(assistantMessageDiv, deltaContent, false);
                             } catch (e) { console.error('Stream parse error:', data, e); }
                         }
                     }
 
-                    // --- Finalize Assistant Message ---
-                    // Trigger final processing and rendering in the UI element
-                    ui.updateStreamingMessage(assistantMessageDiv, null, true); // Pass null delta, isFinished=true
-
-                    // Save the fully accumulated RAW content (including any tags)
+                    // Finalize Assistant Message
+                    ui.updateStreamingMessage(assistantMessageDiv, null, true);
                     const finalAssistantMessage = { role: 'assistant', content: accumulatedDeltaContentForFinish };
-
                     if (finalAssistantMessage.content && finalAssistantMessage.content.trim()) {
                         state.messages.push(finalAssistantMessage);
                         localStorage.setItem('chatMessages', JSON.stringify(state.messages));
                     } else {
-                        console.warn("Stream ended with no content.");
-                        assistantMessageDiv.remove();
+                        console.warn("Stream ended empty."); assistantMessageDiv.remove();
                     }
-
-                } catch (error) { /* ... Error handling same ... */
-                     console.error('sendMessage error:', error); if(assistantMessageDiv&&document.body.contains(assistantMessageDiv))assistantMessageDiv.remove(); if (error.name!=='AbortError')ui.displayError(error.message||"Unknown error."); else console.log("Request aborted.");
-                } finally { /* ... Finally block same ... */
-                     state.isProcessing=false; ui.toggleSendButton(elements.userInput.value.trim()!==''||state.uploadedImages.length>0); state.currentAbortController=null; /* Scroll handled by updateStreamingMessage */
+                } catch (error) {
+                     console.error('sendMessage error:', error); if (assistantMessageDiv && document.body.contains(assistantMessageDiv)) assistantMessageDiv.remove();
+                     if (error.name !== 'AbortError') ui.displayError(error.message || "Unknown error."); else console.log("Request aborted.");
+                } finally {
+                     state.isProcessing = false; ui.toggleSendButton(elements.userInput.value.trim() !== '' || state.uploadedImages.length > 0); state.currentAbortController = null;
                 }
-            }, // end sendMessage
-        }; // end chat object
-
+            },
+        };
 
         // --- Event Listeners ---
-        /* ... same ... */
-         elements.sendBtn.addEventListener('click',()=>chat.sendMessage()); elements.userInput.addEventListener('keypress',(e)=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();chat.sendMessage();}}); elements.userInput.addEventListener('input',ui.adjustTextAreaHeight); elements.userInput.addEventListener('input',()=>{ui.toggleSendButton(elements.userInput.value.trim()!==''||state.uploadedImages.length>0);}); elements.newChatBtn.addEventListener('click',()=>{if(state.currentAbortController)state.currentAbortController.abort();state.messages=[];state.uploadedImages=[];localStorage.removeItem('chatMessages');elements.chatBox.innerHTML='<div class="text-center text-gray-500 dark:text-gray-400 py-8 text-sm">Start a new conversation</div>';ui.clearInput();ui.updateModelIndicator();ui.updateChatHistoryUI();console.log("New chat.");}); elements.imageUpload.addEventListener('change',(e)=>{const files=e.target.files;if(!files||files.length===0)return;const maxI=5;const maxMB=10;if(state.uploadedImages.length+files.length>maxI){ui.displayError(`Max ${maxI} images.`);e.target.value='';return;}const selM=elements.modelSelect.value;if(!VISION_MODELS.includes(selM)){ui.displayError(`Model '${config.MODELS[selM]?.name||selM}' doesn't support images.`);e.target.value='';return;}Array.from(files).forEach(f=>{if(!f.type.startsWith('image/'))return;if(f.size>maxMB*1024*1024){ui.displayError(`"${f.name}" > ${maxMB}MB.`);return;}if(state.uploadedImages.length>=maxI)return;const r=new FileReader();r.onload=(ev)=>{if(state.uploadedImages.length<maxI){state.uploadedImages.push({name:f.name,base64:ev.target.result});ui.addImagePreview(f.name,ev.target.result);}};r.onerror=()=>ui.displayError(`Error reading ${f.name}.`);r.readAsDataURL(f);});e.target.value='';}); elements.menuBtn.addEventListener('click',()=>{elements.sidebar.classList.toggle('-translate-x-full');}); elements.modelSelect.addEventListener('change',()=>{ui.updateModelIndicator();if(state.uploadedImages.length>0&&!VISION_MODELS.includes(elements.modelSelect.value))ui.displayError(`Warning: Selected model doesn't support images.`);});
+         elements.sendBtn.addEventListener('click', () => chat.sendMessage());
+         elements.userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); chat.sendMessage(); } });
+         elements.userInput.addEventListener('input', ui.adjustTextAreaHeight);
+         elements.userInput.addEventListener('input', () => { ui.toggleSendButton(elements.userInput.value.trim() !== '' || state.uploadedImages.length > 0); });
+         elements.newChatBtn.addEventListener('click', () => { if (state.currentAbortController) state.currentAbortController.abort(); state.messages = []; state.uploadedImages = []; localStorage.removeItem('chatMessages'); elements.chatBox.innerHTML = '<div class="text-center text-gray-500 dark:text-gray-400 py-8 text-sm">Start a new conversation</div>'; ui.clearInput(); ui.updateModelIndicator(); ui.updateChatHistoryUI(); console.log("New chat."); });
+         elements.imageUpload.addEventListener('change', (e) => { const files = e.target.files; if (!files || files.length === 0) return; const maxI = 5; const maxMB = 10; if (state.uploadedImages.length + files.length > maxI) { ui.displayError(`Max ${maxI} images.`); e.target.value = ''; return; } const selM = elements.modelSelect.value; if (!VISION_MODELS.includes(selM)) { ui.displayError(`Model '${config.MODELS[selM]?.name || selM}' doesn't support images.`); e.target.value = ''; return; } Array.from(files).forEach(f => { if (!f.type.startsWith('image/')) return; if (f.size > maxMB * 1024 * 1024) { ui.displayError(`"${f.name}" > ${maxMB}MB.`); return; } if (state.uploadedImages.length >= maxI) return; const r = new FileReader(); r.onload = (ev) => { if (state.uploadedImages.length < maxI) { state.uploadedImages.push({ name: f.name, base64: ev.target.result }); ui.addImagePreview(f.name, ev.target.result); } }; r.onerror = () => ui.displayError(`Error reading ${f.name}.`); r.readAsDataURL(f); }); e.target.value = ''; });
+         elements.menuBtn.addEventListener('click', () => { elements.sidebar.classList.toggle('-translate-x-full'); });
+         elements.modelSelect.addEventListener('change', () => { ui.updateModelIndicator(); if (state.uploadedImages.length > 0 && !VISION_MODELS.includes(elements.modelSelect.value)) ui.displayError(`Warning: Selected model doesn't support images.`); });
 
 
         // --- Initial Load ---
-        // Modified: loadSavedMessages applies post-render steps too
         const loadSavedMessages = () => {
              state.messages = (JSON.parse(localStorage.getItem('chatMessages') || '[]')).filter(msg => msg.role !== 'tool');
              localStorage.setItem('chatMessages', JSON.stringify(state.messages));
@@ -443,22 +447,22 @@
                  elements.chatBox.innerHTML = '';
                  state.messages.forEach(msg => {
                      let messageDataForUI;
-                     if (msg.role === 'user') { /* ... user handling same ... */
-                          let c=[];if(Array.isArray(msg.content)){c=msg.content.map(item=>(item.type==='text'&&(item.text===null||typeof item.text==='undefined'))?{...item,text:""}:item);}else{c=[{type:'text',text:msg.content||""}];}messageDataForUI=c;
+                     if (msg.role === 'user') {
+                          let c = []; if (Array.isArray(msg.content)) { c = msg.content.map(item => (item.type === 'text' && (item.text === null || typeof item.text === 'undefined')) ? { ...item, text: "" } : item); } else { c = [{ type: 'text', text: msg.content || "" }]; } messageDataForUI = c;
                      } else if (msg.role === 'assistant') {
                           const rawContent = msg.content || "";
                           const { cleanedContent, thinkHtml } = utilities.extractAndCleanThinkBlocks(rawContent);
-                          const renderedMarkdown = security.renderMarkdown(cleanedContent); // Only md + highlight
-                          messageDataForUI = { renderedMarkdown, thinkHtml };
+                          const renderedMarkdown = security.renderMarkdown(cleanedContent);
+                          // **MODIFIED: thinkHtml first**
+                          messageDataForUI = { renderedMarkdown: renderedMarkdown, thinkHtml: thinkHtml };
                      } else { console.warn("Unknown role history:", msg); return; }
 
                      if (msg.role === 'assistant' && (!messageDataForUI.renderedMarkdown.trim() && !messageDataForUI.thinkHtml.trim())) { console.warn("Skip empty assist msg history:", msg); return; }
-                     if(msg.role === 'user' && messageDataForUI.length === 0) { console.warn("Skip empty user msg history:", msg); return; }
+                     if (msg.role === 'user' && messageDataForUI.length === 0) { console.warn("Skip empty user msg history:", msg); return; }
 
                     const messageDiv = ui.createMessageElement(messageDataForUI, msg.role === 'user', msg.role);
                     elements.chatBox.appendChild(messageDiv);
 
-                    // --- Apply post-render actions (KaTeX, Copy Button) ---
                     if (msg.role === 'assistant') {
                         const contentDiv = messageDiv.querySelector('.message-content');
                         if (contentDiv) {
@@ -475,12 +479,11 @@
 
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
-             if(typeof marked==='undefined')console.error('Marked.js failed!'); if(typeof DOMPurify==='undefined')console.error('DOMPurify failed!'); if(typeof hljs==='undefined')console.warn('Highlight.js failed!'); else {hljs.configure({ignoreUnescapedHTML:true});console.log("hljs configured.");}
-             // Defer KaTeX check as its script has 'defer'
-             setTimeout(() => { if(typeof katex==='undefined' || typeof renderMathInElement==='undefined')console.warn('KaTeX or auto-render failed!'); }, 500);
+             if (typeof marked === 'undefined') console.error('Marked.js failed!'); if (typeof DOMPurify === 'undefined') console.error('DOMPurify failed!'); if (typeof hljs === 'undefined') console.warn('Highlight.js failed!'); else { hljs.configure({ ignoreUnescapedHTML: true }); console.log("hljs configured."); }
+             setTimeout(() => { if (typeof katex === 'undefined' || typeof renderMathInElement === 'undefined') console.warn('KaTeX or auto-render failed!'); }, 500);
 
             populateModelSelect();
-            loadSavedMessages(); // Now also applies KaTeX/Copy to loaded history
+            loadSavedMessages();
             ui.updateModelIndicator();
             ui.adjustTextAreaHeight();
             ui.toggleSendButton(false);
