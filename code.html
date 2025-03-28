@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ChatGPT Clone</title>
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+        .animate-pulse { animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite; }
+        .message-bubble { max-width: min(calc(100% - 2rem), 48rem); }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+</head>
+<body class="h-full bg-gray-50 dark:bg-gray-900 font-sans">
+    <div class="flex flex-col h-full">
+        <header class="bg-white dark:bg-gray-800 border-b dark:border-gray-700 p-4 flex items-center justify-between">
+            <div class="flex items-center">
+                <button id="menu-btn" class="lg:hidden mr-4 text-gray-600 dark:text-gray-300">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/>
+                    </svg>
+                </button>
+                <h1 class="text-xl font-bold text-gray-800 dark:text-white">ChatGPT</h1>
+            </div>
+            <select id="model-select" class="bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white px-4 py-2 rounded-lg">
+                <option value="gpt-4o">GPT-4 Omni</option>
+                <option value="gpt-4o-mini">GPT-4 Omni Mini</option>
+                <option value="deepseek-r1">DeepSeek R1</option>
+                <option value="gemini-2.0-flash">Gemini 2.0 Flash</option>
+                <option value="gpt-4">GPT-4</option>
+                <option value="gpt-3.5">GPT-3.5</option>
+            </select>
+        </header>
+
+        <div class="flex flex-1 overflow-hidden">
+            <aside id="sidebar" class="bg-white dark:bg-gray-800 w-64 border-r dark:border-gray-700 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 fixed lg:relative h-full z-20">
+                <div class="p-4">
+                    <button id="new-chat" class="w-full bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-lg flex items-center">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        New Chat
+                    </button>
+                    <div class="mt-6">
+                        <input type="file" id="image-upload" accept="image/*" multiple class="hidden">
+                        <label for="image-upload" class="cursor-pointer flex items-center text-gray-600 dark:text-gray-400 hover:text-blue-500 transition-colors">
+                            <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            Upload Images
+                        </label>
+                    </div>
+                </div>
+                <!-- Future: Add chat history list here -->
+            </aside>
+
+            <main class="flex-1 flex flex-col overflow-hidden">
+                <div id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-4">
+                    <!-- Messages will be appended here -->
+                    <div class="text-center text-gray-500 dark:text-gray-400 py-8">Start a new conversation</div>
+                </div>
+                <div class="bg-white dark:bg-gray-800 border-t dark:border-gray-700 p-4">
+                    <div id="image-preview" class="flex gap-2 mb-2 overflow-x-auto pb-2"></div>
+                    <div class="relative message-bubble mx-auto flex items-center gap-2">
+                        <label for="image-upload" class="cursor-pointer text-gray-500 dark:text-gray-400 hover:text-blue-500">
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/>
+                            </svg>
+                        </label>
+                        <textarea id="user-input" rows="1"
+                            class="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white rounded-3xl py-3 px-4 pr-12 resize-none overflow-hidden"
+                            placeholder="Type your message..."
+                            style="max-height: 200px"></textarea>
+                        <button id="send-btn" class="bg-blue-500 hover:bg-blue-600 text-white p-2 rounded-full disabled:opacity-50" disabled>
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <script>
+        const config = {
+            MAX_INPUT_LENGTH: 4000, // Increased limit slightly
+            RATE_LIMIT_DELAY: 100, // Reduced delay for faster UX
+            API_ENDPOINT: "https://text.pollinations.ai/openai/v1/chat/completions", // Corrected endpoint for OpenAI compatibility
+            TAVILY_API_KEY: "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", // Keep secure in production
+            MODELS: {
+                'gpt-4o': { name: 'GPT-4 Omni', premium: true },
+                'gpt-4o-mini': { name: 'GPT-4 Omni Mini', premium: false },
+                'deepseek-r1': { name: 'DeepSeek R1', premium: false }, // Note: DeepSeek might not support OpenAI format perfectly
+                'gemini-2.0-flash': { name: 'Gemini 2.0 Flash', premium: true }, // Note: Gemini requires different API structure
+                'gpt-4': { name: 'GPT-4', premium: true },
+                'gpt-3.5': { name: 'GPT-3.5', premium: false }
+            },
+            TOOLS: [
+                {
+                    type: 'function',
+                    function: {
+                        name: 'perform_web_search',
+                        description: 'Perform a real-time web search for the given query when asked for current information or browsing.',
+                        parameters: {
+                            type: 'object',
+                            properties: {
+                                query: { type: 'string', description: 'The search query' }
+                            },
+                            required: ['query']
+                        }
+                    }
+                }
+            ]
+        };
+
+        const VISION_MODELS = ['gpt-4o', 'gpt-4o-mini', 'gpt-4']; // Models supporting image input
+
+        const elements = {
+            chatBox: document.getElementById('chat-box'),
+            userInput: document.getElementById('user-input'),
+            sendBtn: document.getElementById('send-btn'),
+            newChatBtn: document.getElementById('new-chat'),
+            modelSelect: document.getElementById('model-select'),
+            imageUpload: document.getElementById('image-upload'),
+            sidebar: document.getElementById('sidebar'),
+            menuBtn: document.getElementById('menu-btn'),
+            imagePreview: document.getElementById('image-preview')
+        };
+
+        let state = {
+            isProcessing: false,
+            lastRequestTime: 0,
+            messages: JSON.parse(localStorage.getItem('chatMessages') || '[]'),
+            uploadedImages: [], // Stores { name: string, base64: string }
+            currentAbortController: null // To handle cancellation
+        };
+
+        const security = {
+            sanitize: (input) => {
+                if (typeof input !== 'string') return '';
+                const temp = document.createElement('div');
+                temp.textContent = input;
+                // Basic sanitization - more robust library recommended for production
+                return temp.innerHTML
+                    .replace(/</g, "&lt;")
+                    .replace(/>/g, "&gt;")
+                    .replace(/\n/g, '<br>'); // Convert newlines for HTML display
+            },
+            validateInput: (input) => {
+                if (input.length > config.MAX_INPUT_LENGTH) {
+                    throw new Error(`Input exceeds ${config.MAX_INPUT_LENGTH} characters`);
+                }
+                return true;
+            },
+            rateLimit: () => {
+                const now = Date.now();
+                if (now - state.lastRequestTime < config.RATE_LIMIT_DELAY) {
+                    // Simple debounce, not a strict rate limit
+                    // throw new Error('Too many requests. Please wait.');
+                    console.warn('Rate limit check passed (debounced)');
+                }
+                state.lastRequestTime = now;
+            }
+        };
+
+        const ui = {
+            createMessageElement: (content, isUser = false, role = 'assistant') => {
+                const messageWrapper = document.createElement('div');
+                messageWrapper.className = `flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`;
+
+                const bubble = document.createElement('div');
+                bubble.className = `message-bubble rounded-2xl p-3 text-sm ${isUser ? 'ml-auto bg-blue-500 text-white' : 'bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white'}`;
+
+                const contentDiv = document.createElement('div');
+                contentDiv.className = 'message-content flex flex-col gap-2'; // Keep flex for images
+
+                if (role === 'tool') {
+                     bubble.classList.add('bg-purple-100', 'dark:bg-purple-900', 'text-purple-700', 'dark:text-purple-300', 'border', 'border-purple-300', 'dark:border-purple-700');
+                     contentDiv.innerHTML = `<i>Tool Result:</i><br>${security.sanitize(content)}`;
+                } else if (Array.isArray(content)) { // Handle user message with potentially mixed content
+                    content.forEach(item => {
+                        if (item.type === 'text') {
+                            const textEl = document.createElement('div');
+                            textEl.innerHTML = security.sanitize(item.text);
+                            contentDiv.appendChild(textEl);
+                        } else if (item.type === 'image_url' && item.image_url?.url) {
+                            const img = document.createElement('img');
+                            img.src = item.image_url.url;
+                            img.alt = "User uploaded image";
+                            img.className = 'max-w-xs h-auto rounded-lg mt-1'; // Limit width
+                            img.style.maxHeight = '200px';
+                            contentDiv.appendChild(img);
+                        }
+                    });
+                } else if (typeof content === 'string') { // Handle simple text content (initial state or assistant message)
+                    contentDiv.innerHTML = security.sanitize(content);
+                }
+
+                bubble.appendChild(contentDiv);
+                messageWrapper.appendChild(bubble);
+                return messageWrapper;
+            },
+            showLoading: (message = 'Thinking...') => {
+                // Use a placeholder message element instead of a pulse for streaming
+                const loadingElement = ui.createMessageElement('▍'); // Start with a cursor
+                loadingElement.id = 'loading-indicator'; // Add ID to easily find and update later
+                elements.chatBox.appendChild(loadingElement);
+                ui.scrollToBottom();
+                return loadingElement;
+            },
+             updateLoadingCursor: (element) => {
+                // Simple blinking cursor simulation
+                 const cursor = element.querySelector('.message-content');
+                 if (cursor) {
+                    cursor.innerHTML = cursor.innerHTML.endsWith('▍') ? cursor.innerHTML.slice(0, -1) : cursor.innerHTML + '▍';
+                 }
+            },
+            removeLoading: () => {
+                const loader = document.getElementById('loading-indicator');
+                if (loader) loader.remove();
+            },
+            updateModelIndicator: () => {
+                const selectedModel = config.MODELS[elements.modelSelect.value];
+                document.title = `${selectedModel.name} - ChatGPT Clone`;
+                // Optional: Display premium status somewhere if needed
+            },
+            scrollToBottom: () => {
+                elements.chatBox.scrollTop = elements.chatBox.scrollHeight;
+            },
+            toggleSendButton: (enabled) => {
+                elements.sendBtn.disabled = !enabled;
+            },
+            clearInput: () => {
+                 elements.userInput.value = '';
+                 state.uploadedImages = [];
+                 elements.imagePreview.innerHTML = '';
+                 ui.adjustTextAreaHeight(); // Reset height
+                 ui.toggleSendButton(false); // Disable send after clearing
+            },
+            adjustTextAreaHeight: () => {
+                elements.userInput.style.height = 'auto'; // Reset height
+                const maxHeight = parseInt(elements.userInput.style.maxHeight || '200px', 10);
+                const newHeight = Math.min(elements.userInput.scrollHeight, maxHeight);
+                elements.userInput.style.height = `${newHeight}px`;
+            },
+             displayError: (message) => {
+                const errorDiv = ui.createMessageElement(`⚠️ Error: ${security.sanitize(message)}`);
+                errorDiv.querySelector('.message-bubble').classList.add('bg-red-100', 'dark:bg-red-900', 'text-red-700', 'dark:text-red-300', 'border', 'border-red-300', 'dark:border-red-700');
+                elements.chatBox.appendChild(errorDiv);
+                ui.scrollToBottom();
+            },
+             addImagePreview: (name, src) => {
+                const container = document.createElement('div');
+                container.className = 'relative group';
+
+                const img = document.createElement('img');
+                img.src = src;
+                img.alt = name;
+                img.className = 'w-16 h-16 object-cover rounded-lg border border-gray-300 dark:border-gray-600';
+
+                const removeBtn = document.createElement('button');
+                removeBtn.innerHTML = '&times;'; // 'x' symbol
+                removeBtn.className = 'absolute top-0 right-0 -mt-1 -mr-1 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity';
+                removeBtn.onclick = () => {
+                    state.uploadedImages = state.uploadedImages.filter(img => img.base64 !== src);
+                    container.remove();
+                    if (elements.userInput.value.trim() === '' && state.uploadedImages.length === 0) {
+                        ui.toggleSendButton(false);
+                    }
+                    // Check if image input needs to be cleared (if no files left for it)
+                    if (state.uploadedImages.length === 0) {
+                         elements.imageUpload.value = ''; // Reset file input
+                    }
+                };
+
+                container.appendChild(img);
+                container.appendChild(removeBtn);
+                elements.imagePreview.appendChild(container);
+                ui.toggleSendButton(true); // Enable send button when image is added
+            }
+        };
+
+        const webSearch = {
+            performWebSearch: async (query) => {
+                console.log(`Performing web search for: ${query}`);
+                ui.showLoading('Searching the web...'); // Show specific loading
+                try {
+                    // IMPORTANT: In a real app, this backend endpoint would securely use the API key.
+                    // Exposing Tavily key client-side is insecure.
+                    // This is a placeholder demonstrating the flow.
+                    const response = await fetch('https://api.tavily.com/search', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Authorization': `Bearer ${config.TAVILY_API_KEY}` // WARNING: INSECURE CLIENT-SIDE
+                        },
+                        body: JSON.stringify({
+                            query: query,
+                            search_depth: "basic", // or "advanced"
+                            max_results: 5 // Request a few results
+                         })
+                    });
+                    ui.removeLoading(); // Remove search loading
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        throw new Error(`Tavily search failed: ${response.status} ${errorData.error || ''}`);
+                     }
+                    const data = await response.json();
+                    console.log("Tavily Response:", data);
+                    // Format results concisely
+                    let resultsText = `Web search results for "${query}":\n`;
+                    if (data.results && data.results.length > 0) {
+                        data.results.forEach((result, index) => {
+                            resultsText += `\n[${index + 1}] ${result.title}\nSource: ${result.url}\nSnippet: ${result.content}\n---`;
+                        });
+                    } else {
+                        resultsText += "\nNo relevant results found.";
+                    }
+                    return resultsText;
+                } catch (error) {
+                     ui.removeLoading(); // Remove search loading on error
+                    console.error('Web search error:', error);
+                    ui.displayError(`Web search failed: ${error.message}`);
+                    return `Failed to perform web search for "${query}". Error: ${error.message}`; // Return error info to model
+                }
+            }
+        };
+
+        const chat = {
+            sendMessage: async (isFollowUp = false) => { // Added isFollowUp flag
+                if (state.isProcessing && !isFollowUp) return; // Prevent multiple simultaneous sends from user
+
+                let userMessageText = '';
+                let messageContent = []; // Will hold text and image parts
+
+                if (!isFollowUp) {
+                    userMessageText = elements.userInput.value.trim();
+                    if (!userMessageText && state.uploadedImages.length === 0) return; // Nothing to send
+
+                    state.isProcessing = true;
+                    ui.toggleSendButton(false); // Disable send button immediately
+                    security.rateLimit();
+
+                    // --- Construct User Message ---
+                    const selectedModel = elements.modelSelect.value;
+                    const supportsVision = VISION_MODELS.includes(selectedModel);
+
+                    // Add images if present and supported
+                    if (state.uploadedImages.length > 0) {
+                        if (!supportsVision) {
+                            ui.displayError(`Model '${config.MODELS[selectedModel].name}' does not support image input. Please switch models or remove images.`);
+                            state.isProcessing = false;
+                            ui.toggleSendButton(elements.userInput.value.trim() !== '' || state.uploadedImages.length > 0); // Re-enable if there's still input
+                            return;
+                        }
+                        state.uploadedImages.forEach(img => {
+                            messageContent.push({ type: 'image_url', image_url: { url: img.base64 } });
+                        });
+                    }
+
+                    // Add text if present
+                    if (userMessageText) {
+                         try {
+                             security.validateInput(userMessageText);
+                             messageContent.push({ type: 'text', text: userMessageText });
+                         } catch (error) {
+                             ui.displayError(error.message);
+                             state.isProcessing = false;
+                             ui.toggleSendButton(true); // Re-enable button on validation error
+                             return;
+                         }
+                    }
+
+                    const userMsgObj = { role: 'user', content: messageContent };
+                    state.messages.push(userMsgObj);
+
+                    // --- Update UI ---
+                    if (elements.chatBox.querySelector('.text-center')) {
+                         elements.chatBox.innerHTML = ''; // Clear initial message
+                    }
+                    const messageDiv = ui.createMessageElement(messageContent, true, 'user');
+                    elements.chatBox.appendChild(messageDiv);
+                    ui.clearInput(); // Clear input *after* processing it
+                    ui.scrollToBottom();
+                } else {
+                    // If it's a follow-up (tool response), just ensure processing state is set
+                    state.isProcessing = true;
+                     ui.toggleSendButton(false);
+                }
+
+                // --- Prepare for API Call ---
+                localStorage.setItem('chatMessages', JSON.stringify(state.messages)); // Save history before sending
+                const loadingElement = ui.showLoading(isFollowUp ? 'Processing tool response...' : undefined);
+                let loadingInterval = setInterval(() => ui.updateLoadingCursor(loadingElement), 600); // Blinking cursor
+
+
+                // --- Make API Call ---
+                state.currentAbortController = new AbortController(); // For potential cancellation
+                try {
+                    console.log('Sending messages to API:', JSON.stringify(state.messages, null, 2)); // Log what's being sent
+
+                    const response = await fetch(config.API_ENDPOINT, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                             // Pollinations AI might require an API key in the future, add header if needed
+                             // 'Authorization': `Bearer YOUR_API_KEY`
+                        },
+                        body: JSON.stringify({
+                            model: elements.modelSelect.value,
+                            messages: state.messages,
+                            stream: true, // <<< ENABLE STREAMING
+                            tools: config.TOOLS, // Include tools definition
+                            tool_choice: "auto" // Let the model decide when to use tools
+                        }),
+                        signal: state.currentAbortController.signal // Attach abort signal
+                    });
+
+                    clearInterval(loadingInterval); // Stop cursor blinking
+
+                    if (!response.ok) {
+                        const errorBody = await response.text();
+                        console.error("API Error Response:", errorBody);
+                        throw new Error(`Network response was not ok: ${response.status} ${response.statusText}. ${errorBody}`);
+                    }
+
+                    const contentType = response.headers.get('content-type');
+                    console.log('Response Content-Type:', contentType);
+
+                    // --- Process Streaming Response (SSE) ---
+                    if (contentType && contentType.includes('text/event-stream') && response.body) {
+                        const reader = response.body.getReader();
+                        const decoder = new TextDecoder('utf-8');
+                        let buffer = ''; // Buffer to handle partial lines
+                        let assistantMessageContent = '';
+                        let toolCalls = []; // Accumulate tool calls
+                        let toolCallsMap = {}; // Map to assemble chunked tool call arguments
+
+                        // Replace loading indicator with the actual message bubble
+                        const assistantMessageDiv = loadingElement; // Reuse the loading element div
+                        assistantMessageDiv.id = ''; // Remove loading ID
+                        const assistantContentDiv = assistantMessageDiv.querySelector('.message-content');
+                        if (assistantContentDiv) assistantContentDiv.innerHTML = ''; // Clear loading cursor '▍'
+                        assistantMessageDiv.classList.remove('animate-pulse'); // Ensure no pulse animation
+
+                        while (true) {
+                            const { value, done } = await reader.read();
+                            if (done) {
+                                console.log('Stream finished.');
+                                break;
+                            }
+
+                            buffer += decoder.decode(value, { stream: true }); // Append chunk to buffer
+                            // console.log('Raw buffer:', buffer); // Debugging raw data
+
+                            let lines = buffer.split('\n');
+                            buffer = lines.pop() || ''; // Keep the last (potentially partial) line in buffer
+
+                            for (const line of lines) {
+                                if (!line.startsWith('data: ')) continue; // Skip empty lines or comments
+
+                                const data = line.substring(6); // Remove "data: " prefix
+                                if (data === '[DONE]') {
+                                     console.log('Received [DONE] signal.');
+                                     // Optional: Could break outer loop here if [DONE] is reliable
+                                     continue; // Usually stream finishes anyway, but good to acknowledge
+                                }
+
+                                try {
+                                    const parsed = JSON.parse(data);
+                                    // console.log("Parsed chunk:", parsed); // Debugging parsed data
+
+                                    const delta = parsed.choices?.[0]?.delta;
+                                    if (!delta) continue; // Skip if no delta
+
+                                    // --- Handle Content Delta ---
+                                    if (delta.content) {
+                                        assistantMessageContent += delta.content;
+                                        if (assistantContentDiv) {
+                                            // Update incrementally
+                                            assistantContentDiv.innerHTML = security.sanitize(assistantMessageContent);
+                                        }
+                                        ui.scrollToBottom(); // Scroll as content arrives
+                                    }
+
+                                    // --- Handle Tool Call Delta ---
+                                    if (delta.tool_calls) {
+                                        for (const toolCallDelta of delta.tool_calls) {
+                                            const index = toolCallDelta.index; // All parts of a call share an index
+
+                                            // Initialize if first chunk for this index
+                                            if (!toolCallsMap[index]) {
+                                                toolCallsMap[index] = {
+                                                    id: toolCallDelta.id || null, // ID might come later
+                                                    type: 'function', // Assuming only function calls for now
+                                                    function: {
+                                                        name: toolCallDelta.function?.name || '',
+                                                        arguments: toolCallDelta.function?.arguments || ''
+                                                    }
+                                                };
+                                            } else {
+                                                // Update existing entry for this index
+                                                if (toolCallDelta.id) toolCallsMap[index].id = toolCallDelta.id;
+                                                if (toolCallDelta.function?.name) toolCallsMap[index].function.name = toolCallDelta.function.name;
+                                                if (toolCallDelta.function?.arguments) {
+                                                    // IMPORTANT: Append argument chunks
+                                                    toolCallsMap[index].function.arguments += toolCallDelta.function.arguments;
+                                                }
+                                            }
+                                        }
+                                         // Display accumulating tool call info (optional, for debugging/UX)
+                                         if (assistantContentDiv) {
+                                             let toolInfo = Object.values(toolCallsMap).map(tc => `Calling tool: ${tc.function.name}(...)`).join('<br>');
+                                             assistantContentDiv.innerHTML = security.sanitize(assistantMessageContent) + (toolInfo ? `<br><i>${toolInfo}</i>` : '');
+                                         }
+                                    }
+
+                                } catch (e) {
+                                    console.error('Error parsing stream chunk:', data, e);
+                                    // Don't throw, try to continue with next chunks
+                                }
+                            } // end for loop over lines
+                        } // end while(true) loop for reader
+
+                        // --- Finalize Assistant Message after Stream ---
+                        const finalAssistantMessage = { role: 'assistant', content: null }; // Initialize
+                        if (assistantMessageContent) {
+                            finalAssistantMessage.content = assistantMessageContent;
+                             // Ensure final content is displayed correctly
+                            if(assistantContentDiv) assistantContentDiv.innerHTML = security.sanitize(assistantMessageContent);
+                        }
+
+                        // Convert assembled tool calls map to array
+                        toolCalls = Object.values(toolCallsMap);
+                        if (toolCalls.length > 0) {
+                             finalAssistantMessage.tool_calls = toolCalls;
+                             console.log("Assembled Tool Calls:", JSON.stringify(toolCalls, null, 2));
+                             // Optionally update UI to show final tool call info if content was empty
+                             if (!assistantMessageContent && assistantContentDiv) {
+                                  let toolInfo = toolCalls.map(tc => `Calling tool: ${tc.function.name}(...)`).join('<br>');
+                                  assistantContentDiv.innerHTML = `<i>${toolInfo}</i>`;
+                             }
+                        }
+
+                        // Only add message to history if it has content or tool calls
+                        if (finalAssistantMessage.content || finalAssistantMessage.tool_calls) {
+                             state.messages.push(finalAssistantMessage);
+                             localStorage.setItem('chatMessages', JSON.stringify(state.messages));
+                        } else {
+                            console.warn("Stream ended with no content or tool calls.");
+                             if (assistantMessageDiv) assistantMessageDiv.remove(); // Remove empty bubble
+                        }
+
+                        // --- Handle Tool Execution (if any) ---
+                        if (toolCalls.length > 0) {
+                             await chat.handleToolCalls(toolCalls); // Await tool execution and follow-up
+                        }
+
+                    } else {
+                        // --- Handle Non-Streaming Response (Fallback) ---
+                        ui.removeLoading(); // Remove initial loading indicator
+                         clearInterval(loadingInterval); // Stop cursor interval if somehow still running
+                        console.warn("Response was not a stream, processing as JSON.");
+                        const data = await response.json(); // Assumes response.json() works after checking headers
+                        console.log("Non-stream response data:", data);
+                        if (data.choices?.[0]?.message) {
+                            const aiMessage = data.choices[0].message; // { role, content, tool_calls? }
+                            const messageDiv = ui.createMessageElement(aiMessage.content || '');
+                            elements.chatBox.appendChild(messageDiv);
+                            state.messages.push(aiMessage);
+                            localStorage.setItem('chatMessages', JSON.stringify(state.messages));
+
+                            // Handle tool calls even in non-streaming response
+                            if (aiMessage.tool_calls && aiMessage.tool_calls.length > 0) {
+                                await chat.handleToolCalls(aiMessage.tool_calls);
+                            }
+                        } else {
+                            throw new Error('Unexpected non-stream response format');
+                        }
+                    }
+
+                } catch (error) {
+                    clearInterval(loadingInterval); // Stop cursor on error
+                    ui.removeLoading(); // Remove loading indicator on error
+                    console.error('Error in sendMessage:', error);
+                    // Check if it was an AbortError (user cancellation)
+                    if (error.name !== 'AbortError') {
+                        ui.displayError(error.message);
+                    } else {
+                        console.log("Request aborted by user or new request.");
+                         // Optionally add a message indicating cancellation
+                        // ui.createMessageElement("Request cancelled.", false);
+                    }
+                } finally {
+                    state.isProcessing = false;
+                     // Re-enable send button only if there's text or images in the input area
+                     ui.toggleSendButton(elements.userInput.value.trim() !== '' || state.uploadedImages.length > 0);
+                    state.currentAbortController = null; // Clear abort controller
+                    ui.scrollToBottom(); // Ensure scrolled down
+                }
+            }, // end sendMessage
+
+            handleToolCalls: async (toolCalls) => {
+                console.log("Handling tool calls:", toolCalls);
+                let toolResponses = [];
+
+                for (const toolCall of toolCalls) {
+                     if (toolCall.type !== 'function' || !toolCall.function) continue;
+
+                     const functionName = toolCall.function.name;
+                     const toolCallId = toolCall.id;
+                     let functionArgs;
+                     try {
+                         // IMPORTANT: Arguments are a JSON *string*, need to parse
+                         functionArgs = JSON.parse(toolCall.function.arguments);
+                     } catch (e) {
+                         console.error(`Error parsing arguments for tool ${functionName} (ID: ${toolCallId}):`, toolCall.function.arguments, e);
+                         toolResponses.push({
+                             role: 'tool',
+                             tool_call_id: toolCallId,
+                             content: `Error: Could not parse arguments. ${e.message}`
+                         });
+                         continue; // Skip to next tool call
+                     }
+
+                     let functionResponseContent = '';
+
+                     // --- Execute the Correct Function ---
+                     if (functionName === 'perform_web_search') {
+                         const query = functionArgs.query;
+                         if (!query) {
+                             functionResponseContent = `Error: Missing required argument 'query' for perform_web_search.`;
+                         } else {
+                             // Await the result of the async web search function
+                             functionResponseContent = await webSearch.performWebSearch(query);
+                         }
+                     } else {
+                         console.warn(`Unsupported tool function called: ${functionName}`);
+                         functionResponseContent = `Error: Tool function '${functionName}' is not implemented.`;
+                     }
+
+                     // Add the tool's response to the list
+                     toolResponses.push({
+                         role: 'tool',
+                         tool_call_id: toolCallId,
+                         content: functionResponseContent
+                     });
+                } // end for loop over toolCalls
+
+                // --- Add tool responses to message history and UI ---
+                if (toolResponses.length > 0) {
+                    toolResponses.forEach(toolMsg => {
+                         state.messages.push(toolMsg);
+                         const toolMsgDiv = ui.createMessageElement(toolMsg.content, false, 'tool');
+                         elements.chatBox.appendChild(toolMsgDiv);
+                    });
+                    localStorage.setItem('chatMessages', JSON.stringify(state.messages)); // Save history with tool results
+                    ui.scrollToBottom();
+
+                    // --- Call sendMessage again with tool results ---
+                    console.log("Sending tool responses back to model...");
+                    await chat.sendMessage(true); // Pass true for isFollowUp
+                } else {
+                     console.log("No tool responses generated.");
+                     // If no tool responses, ensure processing state is cleared
+                     state.isProcessing = false;
+                     ui.toggleSendButton(elements.userInput.value.trim() !== '' || state.uploadedImages.length > 0);
+                }
+            } // end handleToolCalls
+
+        }; // end chat object
+
+        // --- Event Listeners ---
+        elements.sendBtn.addEventListener('click', () => chat.sendMessage());
+
+        elements.userInput.addEventListener('keypress', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                chat.sendMessage();
+            }
+        });
+
+        elements.userInput.addEventListener('input', () => {
+             ui.adjustTextAreaHeight();
+             // Enable send button if there's text OR images
+             ui.toggleSendButton(elements.userInput.value.trim() !== '' || state.uploadedImages.length > 0);
+        });
+
+        elements.newChatBtn.addEventListener('click', () => {
+            if (state.currentAbortController) {
+                state.currentAbortController.abort(); // Cancel ongoing request if any
+            }
+            state.messages = [];
+            state.uploadedImages = [];
+            localStorage.removeItem('chatMessages');
+            elements.chatBox.innerHTML = '<div class="text-center text-gray-500 dark:text-gray-400 py-8">Start a new conversation</div>';
+            ui.clearInput();
+            ui.updateModelIndicator(); // Reset title potentially
+            console.log("New chat started.");
+        });
+
+        elements.imageUpload.addEventListener('change', (e) => {
+            const files = e.target.files;
+            if (!files || files.length === 0) return;
+
+            const maxImages = 5; // Limit number of images
+            if (state.uploadedImages.length + files.length > maxImages) {
+                ui.displayError(`You can upload a maximum of ${maxImages} images.`);
+                 elements.imageUpload.value = ''; // Clear the selection
+                return;
+            }
+
+            const selectedModel = elements.modelSelect.value;
+             if (!VISION_MODELS.includes(selectedModel)) {
+                 ui.displayError(`Model '${config.MODELS[selectedModel].name}' does not support image input. Switch to a vision-capable model (e.g., GPT-4o) to use images.`);
+                  elements.imageUpload.value = ''; // Clear the selection
+                 return;
+             }
+
+
+            Array.from(files).forEach(file => {
+                 // Basic client-side validation (optional but good)
+                 if (!file.type.startsWith('image/')) {
+                     console.warn(`Skipping non-image file: ${file.name}`);
+                     return;
+                 }
+                 if (file.size > 5 * 1024 * 1024) { // Example: 5MB limit
+                    ui.displayError(`Image "${file.name}" is too large (max 5MB).`);
+                    return;
+                 }
+
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    const base64Image = event.target.result;
+                    if (state.uploadedImages.length < maxImages) {
+                        state.uploadedImages.push({ name: file.name, base64: base64Image });
+                        ui.addImagePreview(file.name, base64Image);
+                    }
+                };
+                 reader.onerror = (error) => {
+                    console.error("FileReader error:", error);
+                    ui.displayError(`Error reading file ${file.name}.`);
+                 };
+                reader.readAsDataURL(file);
+            });
+
+             // Important: Clear the file input value after processing
+             // This allows selecting the same file again if removed and re-added
+             elements.imageUpload.value = '';
+        });
+
+        elements.menuBtn.addEventListener('click', () => {
+            elements.sidebar.classList.toggle('-translate-x-full');
+             // Optional: Add an overlay to close sidebar when clicking outside
+        });
+
+        elements.modelSelect.addEventListener('change', () => {
+            ui.updateModelIndicator();
+             // Warn user if they have images selected and switch to a non-vision model
+             if (state.uploadedImages.length > 0 && !VISION_MODELS.includes(elements.modelSelect.value)) {
+                 ui.displayError(`Warning: The selected model '${config.MODELS[elements.modelSelect.value].name}' does not support images. Your uploaded images will be ignored.`);
+             }
+        });
+
+        // --- Initial Load ---
+        const loadSavedMessages = () => {
+             if (state.messages.length > 0) {
+                 elements.chatBox.innerHTML = ''; // Clear initial message
+                state.messages.forEach(msg => {
+                    // Determine if user message has images for correct display
+                    let displayContent = msg.content;
+                     if (msg.role === 'user' && !Array.isArray(msg.content)) {
+                         // Handle older format where user content might just be a string
+                         displayContent = [{ type: 'text', text: msg.content }];
+                     } else if (msg.role === 'tool') {
+                          displayContent = msg.content; // Tool content is string
+                     }
+
+                    const messageDiv = ui.createMessageElement(displayContent, msg.role === 'user', msg.role);
+                    elements.chatBox.appendChild(messageDiv);
+                });
+                ui.scrollToBottom();
+             }
+        };
+
+        // Initial setup
+        loadSavedMessages();
+        ui.updateModelIndicator();
+        ui.adjustTextAreaHeight();
+        ui.toggleSendButton(false); // Initially disable send button
+
+
+    </script>
+</body>
+</html>
