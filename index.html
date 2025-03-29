@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ChatGPT Clone</title>
+    <title>Fronix</title>
     <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 
@@ -18,7 +18,8 @@
     <!-- KaTeX Math Rendering -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css" integrity="sha384-n8MVd4RsNIU0tAv4ct0nTaAbDJwPJzDEaqSD1tBCETKfPfpvsctZzmufuMAQK/GK" crossorigin="anonymous">
     <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js" integrity="sha384-XjKyOOlGwcjNTAIQHIpgOno0Hl1YQqzUOEleOLALmuqehneUG+vnGctmUb0ZY0l8" crossorigin="anonymous"></script>
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"></script>
+    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/contrib/auto-render.min.js" integrity="sha384-+VBxd3r6XgURycqtZ117nYw44OOcIax56Z4dCRWbxyPt0Koah1uHoK0o4+/RRE05" crossorigin="anonymous"
+            onload="window.katexAutoRenderReady = true;"></script>
 
     <style>
         /* General Styles */
@@ -40,7 +41,7 @@
         .dark .message-content blockquote { border-left-color: #4b5563; color: #9ca3af; }
         .message-content a { color: #3b82f6; text-decoration: underline; } .dark .message-content a { color: #60a5fa; }
         .message-content hr { border-top: 1px solid #e5e7eb; margin: 1.5em 0; } .dark .message-content hr { border-top-color: #374151; }
-        .message-content table { border-collapse: collapse; margin: 1em 0; width: auto; }
+        .message-content table { border-collapse: collapse; margin: 1em 0; width: auto; max-width: 100%; overflow-x: auto; display: block; }
         .message-content th, .message-content td { border: 1px solid #d1d5db; padding: 0.5em 0.8em; } .dark .message-content th, .dark .message-content td { border-color: #4b5563; }
         .message-content th { background-color: #f9fafb; font-weight: 600; } .dark .message-content th { background-color: #374151; }
 
@@ -58,28 +59,118 @@
         .dark .thinking-block { border-left-color: #f59e0b; background-color: rgba(55, 48, 16, 0.3); }
         .thinking-block summary { cursor: pointer; padding: 0.5em 1em; font-weight: 500; color: #ca8a04; font-size: 0.8rem; list-style: none; display: flex; align-items: center; }
         .dark .thinking-block summary { color: #fcd34d; }
+        .thinking-block summary::-webkit-details-marker { display: none; }
         .thinking-block summary::before { content: '▶'; display: inline-block; margin-right: 0.5em; font-size: 0.7em; transition: transform 0.2s ease-in-out; }
         .thinking-block[open] > summary::before { transform: rotate(90deg); }
         .thinking-block-content { padding: 0.5em 1em 1em 1.5em; font-size: 0.85rem; color: #78350f; opacity: 0.9; border-top: 1px dashed #fde68a; }
         .dark .thinking-block-content { color: #fef3c7; border-top-color: #78350f; }
-        .thinking-block-content pre { font-size: 0.8em; padding: 0.5em; background-color: rgba(0,0,0,0.05); white-space: pre-wrap; word-break: break-all; }
+        .thinking-block-content pre { font-size: 0.8em; padding: 0.5em; background-color: rgba(0,0,0,0.05); white-space: pre-wrap; word-break: break-all; margin: 0.5em 0; border-radius: 0.25rem; }
         .dark .thinking-block-content pre { background-color: rgba(255,255,255,0.05); }
 
         /* KaTeX Styling */
         .message-content .katex-display > .katex { display: inline-block; text-align: center; }
-        .message-content .katex-display { overflow-x: auto; overflow-y: hidden; padding: 0.8em 0; margin: 0.8em 0; /* Add vertical margin */ display: block; text-align: center; }
+        .message-content .katex-display { overflow-x: auto; overflow-y: hidden; padding: 0.8em 0; margin: 0.8em 0; display: block; text-align: center; }
         .message-content .katex { font-size: 1.05em; }
 
         /* Blinking Cursor */
         .blinking-cursor { display: inline-block; width: 8px; height: 1.1em; background-color: currentColor; margin-left: 1px; border-radius: 1px; animation: blink 1s step-end infinite; vertical-align: text-bottom; }
         @keyframes blink { 50% { opacity: 0; } }
+
+        /* Chat History Sidebar */
+        .chat-history-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0.5rem 0.75rem; /* px-3 py-2 */
+            border-radius: 0.375rem; /* rounded-md */
+            cursor: pointer;
+            font-size: 0.875rem; /* text-sm */
+            transition: background-color 0.15s ease-in-out;
+            overflow: hidden; /* Prevent long names overflowing buttons */
+            position: relative; /* For positioning edit input */
+        }
+        .chat-history-item:hover {
+            background-color: #e5e7eb; /* hover:bg-gray-200 */
+        }
+        .dark .chat-history-item:hover {
+            background-color: #374151; /* dark:hover:bg-gray-700 */
+        }
+        .chat-history-item.active {
+            background-color: #dbeafe; /* bg-blue-100 */
+            color: #1e40af; /* text-blue-800 */
+            font-weight: 500; /* font-medium */
+        }
+        .dark .chat-history-item.active {
+            background-color: #1e3a8a; /* dark:bg-blue-900 */
+            color: #bfdbfe; /* dark:text-blue-200 */
+        }
+        .chat-history-name {
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            flex-grow: 1; /* Allow name to take available space */
+            margin-right: 0.5rem; /* Space before buttons */
+        }
+        .chat-history-actions {
+            display: flex;
+            align-items: center;
+            gap: 0.25rem; /* space-x-1 */
+            opacity: 0; /* Hidden by default */
+            transition: opacity 0.15s ease-in-out;
+            flex-shrink: 0; /* Prevent buttons shrinking */
+        }
+        .chat-history-item:hover .chat-history-actions {
+            opacity: 1; /* Show on hover */
+        }
+        /* Keep actions visible for active item for easier access */
+        .chat-history-item.active .chat-history-actions {
+             opacity: 1;
+        }
+
+        .chat-history-action-btn {
+            padding: 0.25rem; /* p-1 */
+            border-radius: 0.25rem; /* rounded */
+            color: #6b7280; /* text-gray-500 */
+        }
+        .chat-history-action-btn:hover {
+            background-color: #d1d5db; /* hover:bg-gray-300 */
+            color: #1f2937; /* hover:text-gray-800 */
+        }
+        .dark .chat-history-action-btn {
+            color: #9ca3af; /* dark:text-gray-400 */
+        }
+        .dark .chat-history-action-btn:hover {
+            background-color: #4b5563; /* dark:hover:bg-gray-600 */
+            color: #f3f4f6; /* dark:hover:text-gray-100 */
+        }
+        .chat-edit-input {
+            position: absolute;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            padding: 0.5rem 0.75rem;
+            font-size: 0.875rem;
+            border: 1px solid #3b82f6; /* focus:ring-blue-500 */
+            border-radius: 0.375rem;
+            background-color: #fff; /* bg-white */
+            color: #1f2937; /* text-gray-800 */
+            outline: none;
+            box-sizing: border-box; /* Include padding/border in width/height */
+        }
+        .dark .chat-edit-input {
+            background-color: #1f2937; /* dark:bg-gray-800 */
+            color: #f3f4f6; /* dark:text-gray-100 */
+            border-color: #60a5fa; /* dark focus color */
+        }
+
     </style>
 </head>
 <body class="h-full bg-gray-100 dark:bg-gray-900 font-sans">
     <div class="flex flex-col h-full">
          <header class="bg-white dark:bg-gray-800 border-b dark:border-gray-700 p-4 flex items-center justify-between shadow-sm">
             <div class="flex items-center">
-                <button id="menu-btn" title="Toggle Sidebar" class="lg:hidden mr-4 text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400">
+                <button id="menu-btn" title="Toggle Sidebar" class="lg:hidden mr-4 text-gray-600 dark:text-gray-300 hover:text-blue-500 dark:hover:text-blue-400 focus:outline-none">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16M4 18h16"/></svg>
                 </button>
                 <h1 class="text-xl font-semibold text-gray-800 dark:text-white">Fronix</h1>
@@ -92,41 +183,42 @@
         <div class="flex flex-1 overflow-hidden">
              <aside id="sidebar" class="bg-gray-50 dark:bg-gray-800 w-64 border-r dark:border-gray-700 transform -translate-x-full lg:translate-x-0 transition-transform duration-300 fixed lg:relative h-full z-20 flex flex-col">
                  <div class="p-4">
-                    <button id="new-chat" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg flex items-center justify-center text-sm font-medium shadow-sm transition-colors">
+                    <button id="new-chat" class="w-full bg-blue-600 hover:bg-blue-700 text-white px-4 py-2.5 rounded-lg flex items-center justify-center text-sm font-medium shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
                         New Chat
                     </button>
-                    <div class="mt-5">
-                        <input type="file" id="image-upload" accept="image/*" multiple class="hidden">
-                        <label for="image-upload" class="cursor-pointer flex items-center text-gray-600 dark:text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors text-sm py-2">
-                            <svg class="w-5 h-5 mr-2 text-gray-400 dark:text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-                            Upload Images
-                        </label>
-                    </div>
+                    <!-- Removed sidebar image upload -->
+                    <!-- <div class="mt-5"> ... </div> -->
                 </div>
                  <div class="flex-1 overflow-y-auto p-4 border-t dark:border-gray-700 mt-2">
                      <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider mb-3">History</h2>
                      <div id="chat-history" class="space-y-1">
-                         <p class="text-xs text-gray-400 dark:text-gray-500 px-1">No history yet.</p>
+                         <!-- History items will be populated by JS -->
+                         <p class="text-xs text-gray-400 dark:text-gray-500 px-1">Loading history...</p>
                      </div>
+                 </div>
+                 <div class="p-2 border-t dark:border-gray-700 text-center">
+                    <span class="text-xs text-gray-400 dark:text-gray-500">v1.2.0</span> <!-- Version indicator -->
                  </div>
             </aside>
 
              <main class="flex-1 flex flex-col overflow-hidden bg-white dark:bg-gray-900">
                 <div id="chat-box" class="flex-1 overflow-y-auto p-4 space-y-4">
-                    <div class="text-center text-gray-500 dark:text-gray-400 py-8 text-sm">Start a new conversation</div>
+                    <!-- Initial message handled by loadAppHistory -->
                 </div>
                  <div class="bg-white dark:bg-gray-800 border-t dark:border-gray-700 p-4">
                     <div id="image-preview" class="flex gap-2 mb-2 overflow-x-auto pb-2"></div>
-                    <div class="relative message-bubble mx-auto flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-2xl px-2 py-1 border border-gray-200 dark:border-gray-600">
-                        <label for="image-upload" title="Upload Images" class="cursor-pointer text-gray-500 dark:text-gray-400 hover:text-blue-500 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
+                    <div class="relative message-bubble mx-auto flex items-center gap-2 bg-gray-100 dark:bg-gray-700 rounded-2xl px-2 py-1 border border-gray-200 dark:border-gray-600 focus-within:ring-2 focus-within:ring-blue-500">
+                        <label for="image-upload-attach" title="Attach Images" class="cursor-pointer text-gray-500 dark:text-gray-400 hover:text-blue-500 p-2 rounded-full hover:bg-gray-200 dark:hover:bg-gray-600 transition-colors">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13"/></svg>
                         </label>
+                        <input type="file" id="image-upload-attach" accept="image/*" multiple class="hidden">
+
                         <textarea id="user-input" rows="1"
-                            class="flex-1 bg-transparent text-gray-900 dark:text-white py-2 px-2 resize-none overflow-hidden focus:outline-none placeholder-gray-500 dark:placeholder-gray-400"
+                            class="flex-1 bg-transparent text-gray-900 dark:text-white py-2 px-2 resize-none overflow-y-auto focus:outline-none placeholder-gray-500 dark:placeholder-gray-400"
                             placeholder="Type your message..."
                             style="max-height: 200px"></textarea>
-                        <button id="send-btn" title="Send Message" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 ease-in-out" disabled>
+                        <button id="send-btn" title="Send Message" class="bg-blue-600 hover:bg-blue-700 text-white p-2 rounded-full disabled:opacity-40 disabled:cursor-not-allowed transition-all duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 dark:focus:ring-offset-gray-800" disabled>
                             <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
                                <path d="M10.894 2.553a1 1 0 00-1.788 0l-7 14a1 1 0 001.169 1.409l5-1.429A1 1 0 009 16.571V11.5a1 1 0 112 0v5.071a1 1 0 00.725.962l5 1.428a1 1 0 001.17-1.408l-7-14z"></path>
                             </svg>
@@ -139,224 +231,1058 @@
 
     <script>
         // --- Configuration ---
-        const config = { MAX_INPUT_LENGTH: 4000, API_ENDPOINT: "https://text.pollinations.ai/openai/v1/chat/completions", MODELS: { 'openai-large': { name: 'OpenAI Large', premium: true }, 'openai': { name: 'OpenAI', premium: false }, 'qwen-reasoning': { name: 'Qwen Reasoning', premium: false }, 'gemini': { name: 'Gemini', premium: true }, 'gemini-thinking': { name: 'Gemini Thinking', premium: true }, }, };
+        const config = {
+            MAX_INPUT_LENGTH: 4000,
+            MAX_IMAGES: 5,
+            MAX_IMAGE_MB: 10,
+            API_ENDPOINT: "https://text.pollinations.ai/openai/v1/chat/completions",
+            MODELS: {
+                'openai-large': { name: 'GPT-4o (Vision)', premium: true },
+                'openai': { name: 'GPT-3.5 (Vision)', premium: false },
+                'qwen-reasoning': { name: 'Qwen Reasoning', premium: false },
+                'gemini': { name: 'Gemini 1.5 Pro', premium: true },
+                'gemini-thinking': { name: 'Gemini 1.5 (Thinking)', premium: true },
+            },
+            LOCALSTORAGE_KEY_HISTORY: 'fronixChatHistory_v1', // Use a versioned key
+            LOCALSTORAGE_KEY_ACTIVE_ID: 'fronixActiveChatId_v1',
+        };
         const VISION_MODELS = ['openai-large', 'openai'];
 
         // --- DOM Elements ---
-        const elements = { chatBox: document.getElementById('chat-box'), userInput: document.getElementById('user-input'), sendBtn: document.getElementById('send-btn'), newChatBtn: document.getElementById('new-chat'), modelSelect: document.getElementById('model-select'), imageUpload: document.getElementById('image-upload'), sidebar: document.getElementById('sidebar'), menuBtn: document.getElementById('menu-btn'), imagePreview: document.getElementById('image-preview'), chatHistory: document.getElementById('chat-history') };
+        const elements = {
+            chatBox: document.getElementById('chat-box'),
+            userInput: document.getElementById('user-input'),
+            sendBtn: document.getElementById('send-btn'),
+            newChatBtn: document.getElementById('new-chat'),
+            modelSelect: document.getElementById('model-select'),
+            // imageUploadSidebar: document.getElementById('image-upload'), // Removed
+            imageUploadAttach: document.getElementById('image-upload-attach'),
+            sidebar: document.getElementById('sidebar'),
+            menuBtn: document.getElementById('menu-btn'),
+            imagePreview: document.getElementById('image-preview'),
+            chatHistory: document.getElementById('chat-history')
+        };
 
         // --- Populate Model Select ---
-        function populateModelSelect() { elements.modelSelect.innerHTML = ''; const keys=Object.keys(config.MODELS); const ordered=['openai-large','openai',...keys.filter(k=>k!=='openai-large'&&k!=='openai')]; ordered.forEach(id=>{if(config.MODELS[id]){const o=document.createElement('option');o.value=id;o.textContent=config.MODELS[id].name+(config.MODELS[id].premium?' ✨':'');elements.modelSelect.appendChild(o);}}); if(ordered.length>0&&config.MODELS[ordered[0]])elements.modelSelect.value=ordered[0]; else if(keys.length>0)elements.modelSelect.value=keys[0]; }
+        function populateModelSelect() {
+             elements.modelSelect.innerHTML = '';
+             const keys = Object.keys(config.MODELS);
+             const ordered = ['openai-large', 'openai', ...keys.filter(k => k !== 'openai-large' && k !== 'openai')];
+             ordered.forEach(id => {
+                 if (config.MODELS[id]) {
+                     const option = document.createElement('option');
+                     option.value = id;
+                     option.textContent = config.MODELS[id].name + (config.MODELS[id].premium ? ' ✨' : '');
+                     elements.modelSelect.appendChild(option);
+                 }
+             });
+             if (ordered.length > 0 && config.MODELS[ordered[0]]) {
+                 elements.modelSelect.value = ordered[0];
+             } else if (keys.length > 0) {
+                 elements.modelSelect.value = keys[0];
+             }
+        }
 
         // --- Application State ---
-        let state = { isProcessing: false, messages: JSON.parse(localStorage.getItem('chatMessages') || '[]'), uploadedImages: [], currentAbortController: null };
+        let state = {
+            isProcessing: false,
+            conversations: {}, // Object: { convId: { name: "", createdAt: "", messages: [] }, ... }
+            activeConversationId: null, // String: ID of the currently active conversation
+            uploadedImages: [], // Array of { name: string, base64: string } for the current message draft
+            currentAbortController: null,
+            isEditingHistoryName: false // Flag to prevent actions during rename
+        };
 
         // --- Security, Utilities, Markdown, Math ---
         const utilities = {
-             extractAndCleanThinkBlocks: (rawContent) => { if(typeof rawContent!=='string')return{cleanedContent:'',thinkHtml:''}; const blocks=[]; const regex=/<think>([\s\S]*?)<\/think>/g; const cleaned=rawContent.replace(regex,(_,c)=>{if(c.trim())blocks.push(c.trim());return '';}).trim(); let html=''; if(blocks.length>0){ html='<details class="thinking-block"><summary>Show Thoughts</summary><div class="thinking-block-content">'; blocks.forEach((b,i)=>{html+=`<pre>${security.basicSanitize(b)}</pre>`; if(i<blocks.length-1)html+='<hr class="my-2 border-dashed border-amber-300 dark:border-amber-700">'; }); html+='</div></details>'; } return {cleanedContent:cleaned,thinkHtml:html}; },
-             // Simplified: Only convert [...] to $$...$$ if found
-             preprocessMathTags: (content) => {
-                 if (typeof content !== 'string') return '';
-                 // Convert `[`content`]` to `$$`content`$$` non-greedily
-                 try {
-                     return content.replace(/\[([\s\S]+?)\]/g, '$$$1$$');
-                 } catch (e) {
-                     console.error("Error during math tag preprocessing:", e);
-                     return content; // Return original content on error
+            /** Generates a unique ID for conversations. */
+            generateConversationId: () => `conv_${Date.now()}_${Math.random().toString(36).substring(2, 7)}`,
+
+             /** Extracts <think> blocks, cleans content, returns both. */
+             extractAndCleanThinkBlocks: (rawContent) => {
+                 if (typeof rawContent !== 'string') return { cleanedContent: '', thinkHtml: '' };
+                 const blocks = [];
+                 const regex = /<think>([\s\S]*?)<\/think>/g;
+                 const cleaned = rawContent.replace(regex, (_, content) => {
+                     if (content.trim()) blocks.push(content.trim());
+                     return '';
+                 }).trim();
+                 let html = '';
+                 if (blocks.length > 0) {
+                     html = '<details class="thinking-block"><summary>Show Thoughts</summary><div class="thinking-block-content">';
+                     blocks.forEach((block, i) => {
+                         const sanitizedBlock = security.basicSanitize(block);
+                         html += `<pre>${sanitizedBlock}</pre>`;
+                         if (i < blocks.length - 1) html += '<hr class="my-2 border-dashed border-amber-300 dark:border-amber-700">';
+                     });
+                     html += '</div></details>';
                  }
+                 return { cleanedContent: cleaned, thinkHtml: html };
              },
+
+             /** Converts custom math tags `[...]` to KaTeX display math `$$...$$`. Non-greedy. */
+            preprocessMathTags: (content) => {
+                if (typeof content !== 'string') return '';
+                try {
+                    // Convert `[`content`]` to `$$`content`$$` non-greedily
+                    content = content.replace(/\[([\s\S]+?)\]/g, '$$$$$1$$$$'); // Use $$$$ because $ is special in replace
+                } catch (e) {
+                    console.error("Error during math tag preprocessing:", e);
+                }
+                return content; // Return potentially modified content
+            },
+
+
+            /** Renders math in a given DOM element using KaTeX auto-render. */
              renderMathInElement: (element) => {
-                 // Check if KaTeX's auto-render function is loaded
-                 if (typeof renderMathInElement === 'function') {
+                 if (!element) return;
+                 if (typeof renderMathInElement === 'function' && window.katexAutoRenderReady) {
                      try {
-                         console.log("Attempting KaTeX auto-render on:", element); // Debug log
                          renderMathInElement(element, {
-                             delimiters: [ {left: '$$', right: '$$', display: true}, {left: '$', right: '$', display: false}, {left: '\\(', right: '\\)', display: false}, {left: '\\[', right: '\\]', display: true} ],
-                             throwOnError: false // Don't halt execution on a single bad formula
+                             delimiters: [
+                                 { left: '$$', right: '$$', display: true },
+                                 // IMPORTANT: Added $ delimiters for inline math
+                                 { left: '$', right: '$', display: false },
+                                 { left: '\\(', right: '\\)', display: false },
+                                 { left: '\\[', right: '\\]', display: true }
+                             ],
+                             throwOnError: false,
+                             // Added ignoredTags based on potential conflicts:
+                             ignoredTags: ["script", "noscript", "style", "textarea", "pre", "code", "option"]
                          });
-                         console.log("KaTeX auto-render finished for:", element); // Debug log
-                     } catch (error) { console.error("KaTeX renderMathInElement error:", error); }
+                     } catch (error) {
+                         console.error("KaTeX renderMathInElement error:", error);
+                     }
                  } else {
-                      // Check again later if deferred script hasn't loaded yet
-                      if (document.readyState === 'complete') {
-                           console.warn("KaTeX auto-render function (renderMathInElement) not found after DOM load.");
-                      } else {
-                           console.warn("KaTeX auto-render function not available yet, will check again.");
-                      }
+                    // Retry mechanism remains useful
+                    setTimeout(() => utilities.renderMathInElement(element), 300);
                  }
              },
-             addCopyButtonsToCodeBlocks: (parentElement) => { try { parentElement.querySelectorAll('pre').forEach(pre=>{ if(pre.querySelector('.copy-code-button')||pre.closest('.thinking-block-content'))return; const code=pre.querySelector('code'); if(!code)return; const btn=document.createElement('button'); btn.className='copy-code-button'; btn.textContent='Copy'; btn.onclick=()=>{navigator.clipboard.writeText(code.textContent).then(()=>{btn.textContent='Copied!';setTimeout(()=>{btn.textContent='Copy';},2000);}).catch(err=>{console.error('Copy failed:',err);btn.textContent='Error';setTimeout(()=>{btn.textContent='Copy';},2000);});}; pre.appendChild(btn); }); } catch(e){ console.error("Error adding copy buttons:", e); } }
+
+            /** Adds 'Copy' buttons to code blocks within a parent element. */
+            addCopyButtonsToCodeBlocks: (parentElement) => {
+                if (!parentElement) return;
+                try {
+                    parentElement.querySelectorAll('pre').forEach(pre => {
+                        if (pre.querySelector('.copy-code-button') || pre.closest('.thinking-block-content')) return;
+                        const code = pre.querySelector('code');
+                        if (!code) return;
+                        const btn = document.createElement('button');
+                        btn.className = 'copy-code-button';
+                        btn.textContent = 'Copy';
+                        btn.title = 'Copy code snippet';
+                        btn.onclick = () => { /* ... copy logic ... */ }; // (Keep existing copy logic)
+                        navigator.clipboard.writeText(code.textContent || '')
+                                .then(() => {
+                                    btn.textContent = 'Copied!';
+                                    setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+                                })
+                                .catch(err => {
+                                    console.error('Failed to copy code:', err);
+                                    btn.textContent = 'Error';
+                                    setTimeout(() => { btn.textContent = 'Copy'; }, 2000);
+                                });
+                        if (getComputedStyle(pre).position === 'static') {
+                            pre.style.position = 'relative';
+                        }
+                        pre.appendChild(btn);
+                    });
+                } catch (e) { console.error("Error adding copy buttons:", e); }
+            }
         };
 
         const security = {
-            basicSanitize: (input) => { if(typeof input!=='string')return''; const t=document.createElement('div'); t.textContent=input; return t.innerHTML.replace(/\n/g,'<br>'); },
-            // Modified: Calls simplified preprocessMathTags
-            renderMarkdown: (markdownContent) => {
-                if (typeof markdownContent !== 'string') return '';
-                let processedContent = markdownContent;
-                try {
-                    if (typeof marked==='undefined') throw new Error('Marked missing'); if (typeof DOMPurify==='undefined') throw new Error('DOMPurify missing'); if (typeof hljs==='undefined') console.warn('hljs missing');
-
-                    // 1. Pre-process potentially custom math tags
-                    processedContent = utilities.preprocessMathTags(processedContent);
-                    // console.log("Content after math preprocess:", processedContent.substring(0, 300)); // Debug log
-
-                    // 2. Parse Markdown
-                    const rawHtml = marked.parse(processedContent, { breaks: true, gfm: true });
-                    // console.log("HTML after marked:", rawHtml.substring(0, 300)); // Debug log
-
-                    // 3. Sanitize
-                    const cleanHtml = DOMPurify.sanitize(rawHtml, { USE_PROFILES: { html: true }, ADD_ATTR: ['target', 'class'] });
-                    // console.log("HTML after purify:", cleanHtml.substring(0, 300)); // Debug log
-
-                    // 4. Apply Syntax Highlighting + Target Blank
-                    const tempDiv = document.createElement('div'); tempDiv.innerHTML = cleanHtml;
-                    tempDiv.querySelectorAll('a').forEach(a=>{if(a.href&&!a.target){a.target='_blank';a.rel='noopener noreferrer';}});
-                    if(typeof hljs!=='undefined'){ tempDiv.querySelectorAll('pre code').forEach((block)=>{try{hljs.highlightElement(block);}catch(e){console.error("hljs error:",e);}}); }
-
-                    return tempDiv.innerHTML; // Return HTML ready for KaTeX pass
-                } catch (error) {
-                    console.error("Markdown/Highlight err:", error, "Input:", markdownContent.substring(0, 200));
-                    return security.basicSanitize(processedContent); // Fallback sanitize pre-processed content
-                }
+            /** Basic HTML entity encoding. */
+            basicSanitize: (input) => {
+                if (typeof input !== 'string') return '';
+                const temp = document.createElement('div');
+                temp.textContent = input;
+                // Don't replace \n with <br> here, let Markdown handle it or do it specifically where needed
+                return temp.innerHTML;
             },
-            validateInput: (input) => { if(input.length>config.MAX_INPUT_LENGTH)throw new Error(`Input > ${config.MAX_INPUT_LENGTH} chars`); return true; }
+
+             /** Renders Markdown to safe HTML. */
+             renderMarkdown: (markdownContent) => {
+                 if (typeof markdownContent !== 'string') return '';
+                 let processedContent = markdownContent;
+                 try {
+                     if (typeof marked === 'undefined') throw new Error('marked.js missing.');
+                     if (typeof DOMPurify === 'undefined') throw new Error('DOMPurify missing.');
+                     if (typeof hljs === 'undefined') console.warn('hljs missing');
+
+                     // 1. Pre-process custom math tags FIRST (for $$...$$)
+                     processedContent = utilities.preprocessMathTags(processedContent);
+
+                     // 2. Parse Markdown (Marked *might* interfere with $...$ less now, need testing)
+                     const rawHtml = marked.parse(processedContent, { breaks: true, gfm: true });
+
+                     // 3. Sanitize (Ensure KaTeX classes/tags are allowed if needed, but auto-render handles this mostly)
+                     const cleanHtml = DOMPurify.sanitize(rawHtml, {
+                         USE_PROFILES: { html: true },
+                         ADD_ATTR: ['target', 'class'],
+                         ADD_TAGS: ['details', 'summary'],
+                         // Crucially, allow span tags often used by KaTeX
+                         // Might need to add more specific KaTeX classes/attributes if issues persist
+                         ADD_TAGS: ['span', 'details', 'summary'],
+                         ADD_ATTR: ['target', 'class', 'style', 'aria-hidden'], // Allow style for KaTeX positioning etc.
+                     });
+
+                     // 4. Post-process: Add target="_blank", highlight code
+                     const tempDiv = document.createElement('div');
+                     tempDiv.innerHTML = cleanHtml;
+                     tempDiv.querySelectorAll('a').forEach(a => { /* ... target blank logic ... */ });
+                    tempDiv.querySelectorAll('a').forEach(a => {
+                        if (a.href && !a.target) {
+                            a.target = '_blank';
+                            a.rel = 'noopener noreferrer';
+                        }
+                    });
+
+                     if (typeof hljs !== 'undefined') {
+                         tempDiv.querySelectorAll('pre code').forEach((block) => { /* ... hljs logic ... */ });
+                        tempDiv.querySelectorAll('pre code:not(.hljs)').forEach((block) => { // Avoid re-highlighting
+                            try { hljs.highlightElement(block); } catch(e){console.error("hljs error:",e);}
+                        });
+                     }
+                     // Return HTML ready for KaTeX pass
+                     return tempDiv.innerHTML;
+                 } catch (error) {
+                     console.error("Markdown/Highlight err:", error);
+                     // Fallback: Sanitize the *pre-processed* content (might have $$ tags)
+                     return security.basicSanitize(processedContent).replace(/\n/g, '<br>'); // Add breaks for fallback
+                 }
+             },
+
+             /** Validates user text input length. */
+            validateInput: (input) => { /* ... validation logic ... */
+                if (input.length > config.MAX_INPUT_LENGTH) {
+                    throw new Error(`Input cannot exceed ${config.MAX_INPUT_LENGTH} characters.`);
+                }
+                return true;
+            }
         };
 
         // --- UI Management ---
         const ui = {
-            createMessageElement: (processedResult, isUser = false, role = 'assistant') => { const wrapper = document.createElement('div'); wrapper.className = `flex ${isUser?'justify-end':'justify-start'} mb-4`; const bubble=document.createElement('div'); bubble.className = `message-bubble rounded-lg p-3.5 text-sm shadow ${isUser?'ml-auto bg-blue-600 text-white':'bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}`; const contentDiv=document.createElement('div'); contentDiv.className='message-content flex flex-col gap-0'; if(role==='error'){ bubble.classList.remove('bg-white','dark:bg-gray-700','bg-blue-600');bubble.classList.add('bg-red-100','dark:bg-red-800','text-red-800','dark:text-red-100','border','border-red-200','dark:border-red-600');contentDiv.innerHTML=`⚠️ ${security.basicSanitize(processedResult)}`; } else if(isUser&&Array.isArray(processedResult)){ processedResult.forEach(item=>{if(item.type==='text'){const t=document.createElement('div');t.innerHTML=security.basicSanitize(item.text||"");contentDiv.appendChild(t);}else if(item.type==='image_url'&&item.image_url?.url){const i=document.createElement('img');i.src=item.image_url.url;i.alt="User image";i.className='max-w-xs h-auto rounded-md mt-1 border dark:border-gray-600';i.style.maxHeight='200px';contentDiv.appendChild(i);}}); } else if(role==='assistant'&&typeof processedResult==='object'&&processedResult.renderedMarkdown!==undefined){ contentDiv.innerHTML = processedResult.thinkHtml + processedResult.renderedMarkdown; } else if(role==='loading'&&typeof processedResult==='string'){ contentDiv.innerHTML=`<span class="streaming-text"></span><span class="blinking-cursor"></span>`; } else { console.warn("createMsg unexpected:", processedResult); contentDiv.innerHTML=security.basicSanitize(String(processedResult)); } bubble.appendChild(contentDiv); wrapper.appendChild(bubble); return wrapper; },
-             updateStreamingMessage: (element, deltaContent, isFinished = false) => { const contentDiv = element.querySelector('.message-content'); const textSpan = element.querySelector('.streaming-text'); const cursorSpan = element.querySelector('.blinking-cursor'); if (!contentDiv || !textSpan || !cursorSpan) { console.error("Streaming structure invalid!"); return; } const wasNearBottom = ui.isScrolledToBottom(15); /* Increased threshold slightly */ if (isFinished) { cursorSpan.remove(); textSpan.remove(); const finalRaw = textSpan.textContent; const { cleanedContent, thinkHtml } = utilities.extractAndCleanThinkBlocks(finalRaw); const renderedMarkdown = security.renderMarkdown(cleanedContent); contentDiv.innerHTML = thinkHtml + renderedMarkdown; try { utilities.renderMathInElement(contentDiv); } catch(e){console.error("KaTeX final render err:", e);} try { utilities.addCopyButtonsToCodeBlocks(contentDiv); } catch(e){console.error("CopyBtn final err:", e);} } else { const temp=document.createElement('div'); temp.textContent=deltaContent; textSpan.innerHTML += temp.innerHTML.replace(/\n/g,'<br>'); } if(wasNearBottom){ requestAnimationFrame(()=>{ ui.scrollToBottom(); }); } },
-             createStreamingMessageElement: () => { const e = ui.createMessageElement('', false, 'loading'); e.id = 'streaming-message'; elements.chatBox.appendChild(e); ui.scrollToBottom(); return e; },
-             isScrolledToBottom: (threshold = 5) => { const el = elements.chatBox; return Math.abs(el.scrollHeight - el.scrollTop - el.clientHeight) < threshold; },
-             updateModelIndicator: () => { if(!elements.modelSelect.value||!config.MODELS[elements.modelSelect.value]){console.warn("Model select invalid.");document.title="Fronix";return;} const m=config.MODELS[elements.modelSelect.value];document.title=`${m.name} - Fronix`; },
-             scrollToBottom: () => { elements.chatBox.scrollTo({ top: elements.chatBox.scrollHeight, behavior: 'smooth' }); },
-             toggleSendButton: (enabled) => { elements.sendBtn.disabled = !enabled; },
-             clearInput: () => { elements.userInput.value = ''; state.uploadedImages = []; elements.imagePreview.innerHTML = ''; ui.adjustTextAreaHeight(); ui.toggleSendButton(false); },
-             adjustTextAreaHeight: () => { elements.userInput.style.height='auto'; const maxH=parseInt(elements.userInput.style.maxHeight||'200px',10); const scrollH=elements.userInput.scrollHeight; const newH=Math.min(scrollH,maxH)+(scrollH>maxH?0:2); elements.userInput.style.height=`${newH}px`; },
-             displayError: (message) => { const errDiv = ui.createMessageElement(message, false, 'error'); elements.chatBox.appendChild(errDiv); ui.scrollToBottom(); },
-             addImagePreview: (name, src) => { const c=document.createElement('div'); c.className='relative group flex-shrink-0'; const i=document.createElement('img'); i.src=src; i.alt=name; i.title=name; i.className='w-16 h-16 object-cover rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer'; i.onclick=()=>window.open(src,'_blank'); const b=document.createElement('button'); b.innerHTML='&times;'; b.title="Remove image"; b.className='absolute -top-2 -right-2 bg-red-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100'; b.onclick=(e)=>{e.stopPropagation(); state.uploadedImages=state.uploadedImages.filter(img=>img.base64!==src); c.remove(); if(elements.userInput.value.trim()===''&&state.uploadedImages.length===0)ui.toggleSendButton(false); if(state.uploadedImages.length===0)elements.imageUpload.value='';}; c.appendChild(i); c.appendChild(b); elements.imagePreview.appendChild(c); ui.toggleSendButton(true); },
-             updateChatHistoryUI: () => { console.log("UI: History UI update (not implemented)"); }
+             /** Creates a DOM element for a message bubble. */
+             createMessageElement: (processedResult, isUser = false, role = 'assistant') => {
+                 const wrapper = document.createElement('div');
+                 wrapper.className = `flex ${isUser ? 'justify-end' : 'justify-start'} mb-4`;
+                 const bubble = document.createElement('div');
+                 bubble.className = `message-bubble rounded-lg p-3.5 text-sm shadow ${isUser ? 'ml-auto bg-blue-600 text-white' : 'bg-white dark:bg-gray-700 text-gray-900 dark:text-white'}`;
+                 const contentDiv = document.createElement('div');
+                 contentDiv.className = 'message-content flex flex-col gap-0';
+
+                 if (role === 'error') {
+                     bubble.classList.remove('bg-white', 'dark:bg-gray-700', 'bg-blue-600');
+                     bubble.classList.add('bg-red-100', 'dark:bg-red-900', 'text-red-800', 'dark:text-red-100', 'border', 'border-red-200', 'dark:border-red-700');
+                     // Use basicSanitize but allow <br> for multi-line errors if needed
+                     contentDiv.innerHTML = `⚠️ ${security.basicSanitize(processedResult).replace(/\n/g, '<br>')}`;
+                 } else if (isUser && Array.isArray(processedResult)) {
+                     processedResult.forEach(item => {
+                         if (item.type === 'text') {
+                             const textDiv = document.createElement('div');
+                             // Sanitize user text - use basicSanitize and replace newlines
+                             textDiv.innerHTML = security.basicSanitize(item.text || "").replace(/\n/g, '<br>');
+                             if (item.text?.trim()) contentDiv.appendChild(textDiv); // Only add if non-empty text
+                         } else if (item.type === 'image_url' && item.image_url?.url) {
+                             const img = document.createElement('img');
+                             img.src = item.image_url.url;
+                             img.alt = "User uploaded image";
+                             img.className = 'max-w-xs h-auto rounded-md mt-1 border dark:border-gray-600';
+                             img.style.maxHeight = '200px';
+                             img.loading = 'lazy';
+                             contentDiv.appendChild(img);
+                         }
+                     });
+                 } else if (role === 'assistant' && typeof processedResult === 'object' && processedResult.renderedMarkdown !== undefined) {
+                     contentDiv.innerHTML = (processedResult.thinkHtml || '') + (processedResult.renderedMarkdown || '');
+                 } else if (role === 'loading') {
+                     contentDiv.innerHTML = `<span class="streaming-text"></span><span class="blinking-cursor"></span>`;
+                 } else {
+                     console.warn("createMessageElement unexpected:", processedResult);
+                     contentDiv.innerHTML = security.basicSanitize(String(processedResult)).replace(/\n/g, '<br>');
+                 }
+
+                 bubble.appendChild(contentDiv);
+                 wrapper.appendChild(bubble);
+                 return wrapper;
+             },
+
+            /** Updates the content of a streaming message element. Finalizes on completion. */
+            updateStreamingMessage: (element, deltaContent, isFinished = false, finalRawContent = '') => {
+                const contentDiv = element.querySelector('.message-content');
+                const textSpan = element.querySelector('.streaming-text');
+                const cursorSpan = element.querySelector('.blinking-cursor');
+
+                if (!contentDiv || (!textSpan && !isFinished) || (!cursorSpan && !isFinished)) {
+                    // console.error("Streaming message structure not found or invalid for update.", element);
+                    return; // Might happen if element removed due to error/abort
+                }
+
+                const wasNearBottom = ui.isScrolledToBottom(25);
+
+                if (isFinished) {
+                    cursorSpan?.remove();
+                    textSpan?.remove();
+
+                    const { cleanedContent, thinkHtml } = utilities.extractAndCleanThinkBlocks(finalRawContent);
+                    const renderedMarkdown = security.renderMarkdown(cleanedContent); // Renders markdown, preprocesses math
+
+                    contentDiv.innerHTML = thinkHtml + renderedMarkdown; // Set the final HTML
+
+                    // Apply post-render AFTER setting innerHTML
+                    utilities.renderMathInElement(contentDiv); // Render KaTeX math ($...$ and $$...$$)
+                    utilities.addCopyButtonsToCodeBlocks(contentDiv); // Add copy buttons
+
+                } else if (textSpan) {
+                    // Append delta during streaming using textContent to avoid HTML injection issues from deltas
+                    const temp = document.createElement('div');
+                    temp.textContent = deltaContent;
+                    textSpan.innerHTML += temp.innerHTML.replace(/\n/g, '<br>');
+                }
+
+                if (wasNearBottom) {
+                    requestAnimationFrame(() => { ui.scrollToBottom(true); });
+                }
+            },
+
+             /** Creates and appends a placeholder element for the streaming response. */
+            createStreamingMessageElement: () => { /* ... same as before ... */
+                 const loadingElement = ui.createMessageElement('', false, 'loading');
+                 loadingElement.id = 'streaming-message'; // Assign ID for easy selection
+                 elements.chatBox.appendChild(loadingElement);
+                 ui.scrollToBottom(true); // Scroll immediately to show loading indicator
+                 return loadingElement;
+            },
+
+             /** Checks if the chatbox is scrolled to the bottom within a threshold. */
+            isScrolledToBottom: (threshold = 10) => { /* ... same as before ... */
+                 const el = elements.chatBox;
+                 if (!el || el.scrollHeight === 0) return true;
+                 return Math.abs(el.scrollHeight - el.scrollTop - el.clientHeight) < threshold;
+            },
+
+             /** Updates the window title based on the selected model AND active chat. */
+            updateTitle: () => {
+                 const modelInfo = config.MODELS[elements.modelSelect.value];
+                 const modelName = modelInfo ? modelInfo.name : "Unknown Model";
+                 const activeChat = state.conversations[state.activeConversationId];
+                 const chatName = activeChat ? activeChat.name : "No Chat";
+                 document.title = `${chatName} - ${modelName} - Fronix`;
+             },
+
+             /** Scrolls the chatbox to the bottom. */
+            scrollToBottom: (instant = false) => { /* ... same as before ... */
+                 elements.chatBox.scrollTo({
+                     top: elements.chatBox.scrollHeight,
+                     behavior: instant ? 'instant' : 'smooth'
+                 });
+            },
+
+             /** Toggles the enabled state and appearance of the send button. */
+            toggleSendButton: (enabled) => { /* ... same as before ... */
+                 elements.sendBtn.disabled = !enabled;
+            },
+
+             /** Clears the user input, image previews, and resets related state for the *draft* message. */
+            clearInputDraft: () => {
+                 elements.userInput.value = '';
+                 state.uploadedImages = []; // Clear only the draft images
+                 elements.imagePreview.innerHTML = '';
+                 ui.adjustTextAreaHeight();
+                 ui.toggleSendButton(false); // Disable send unless there's text/images
+                 elements.imageUploadAttach.value = ''; // Clear file input
+             },
+
+             /** Adjusts the textarea height dynamically. */
+            adjustTextAreaHeight: () => { /* ... same as before ... */
+                 const textarea = elements.userInput;
+                 textarea.style.height = 'auto';
+                 const maxHeight = parseInt(textarea.style.maxHeight || '200px', 10);
+                 const scrollHeight = textarea.scrollHeight;
+                 const newHeight = Math.min(scrollHeight, maxHeight) + (scrollHeight < maxHeight ? 2 : 0);
+                 textarea.style.height = `${newHeight}px`;
+                 textarea.style.overflowY = (scrollHeight > maxHeight) ? 'auto' : 'hidden';
+             },
+
+             /** Displays an error message in the chat box. */
+            displayError: (message) => { /* ... same as before ... */
+                 const errorDiv = ui.createMessageElement(message, false, 'error');
+                 elements.chatBox.appendChild(errorDiv);
+                 ui.scrollToBottom();
+             },
+
+             /** Adds a visual preview for an uploaded image. */
+            addImagePreview: (name, src) => { /* ... same as before, ensure removeBtn updates send button state ... */
+                 const container = document.createElement('div');
+                 container.className = 'relative group flex-shrink-0';
+                 const img = document.createElement('img');
+                 img.src = src;
+                 img.alt = name;
+                 img.title = `Preview: ${name}`;
+                 img.className = 'w-16 h-16 object-cover rounded-lg border border-gray-300 dark:border-gray-600 cursor-pointer hover:opacity-80 transition-opacity';
+                 img.loading = 'lazy';
+                 img.onclick = () => window.open(src, '_blank');
+
+                 const removeBtn = document.createElement('button');
+                 removeBtn.innerHTML = '×';
+                 removeBtn.title = "Remove image";
+                 removeBtn.className = 'absolute -top-2 -right-2 bg-red-500 hover:bg-red-600 text-white rounded-full w-5 h-5 flex items-center justify-center text-xs font-bold opacity-0 group-hover:opacity-100 transition-opacity focus:opacity-100 focus:outline-none focus:ring-2 focus:ring-red-400';
+                 removeBtn.onclick = (e) => {
+                     e.stopPropagation();
+                     state.uploadedImages = state.uploadedImages.filter(imgData => imgData.base64 !== src);
+                     container.remove();
+                     // Update send button state after removal
+                     ui.toggleSendButton(elements.userInput.value.trim() !== '' || state.uploadedImages.length > 0);
+                     if (state.uploadedImages.length === 0) {
+                         elements.imageUploadAttach.value = '';
+                     }
+                 };
+
+                 container.appendChild(img);
+                 container.appendChild(removeBtn);
+                 elements.imagePreview.appendChild(container);
+                 ui.toggleSendButton(true); // Enable send button
+             },
+
+            /** Renders the list of conversations in the sidebar. */
+            updateChatHistoryUI: () => {
+                 elements.chatHistory.innerHTML = ''; // Clear existing items
+                 const conversationIds = Object.keys(state.conversations);
+
+                 if (conversationIds.length === 0) {
+                     elements.chatHistory.innerHTML = '<p class="text-xs text-gray-400 dark:text-gray-500 px-1">No history yet.</p>';
+                     return;
+                 }
+
+                 // Sort conversations by creation date, newest first
+                 conversationIds.sort((a, b) => state.conversations[b].createdAt - state.conversations[a].createdAt);
+
+                 conversationIds.forEach(convId => {
+                     const conversation = state.conversations[convId];
+                     const item = document.createElement('div');
+                     item.className = 'chat-history-item group'; // Add group for hover effects
+                     item.dataset.convId = convId; // Store ID for event listeners
+                     if (convId === state.activeConversationId) {
+                         item.classList.add('active');
+                     }
+
+                     const nameSpan = document.createElement('span');
+                     nameSpan.className = 'chat-history-name';
+                     nameSpan.textContent = conversation.name;
+                     nameSpan.title = conversation.name; // Tooltip for long names
+
+                     const actionsDiv = document.createElement('div');
+                     actionsDiv.className = 'chat-history-actions';
+
+                     // Rename Button
+                     const renameBtn = document.createElement('button');
+                     renameBtn.className = 'chat-history-action-btn';
+                     renameBtn.title = 'Rename Chat';
+                     renameBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path></svg>`;
+                     renameBtn.onclick = (e) => {
+                         e.stopPropagation(); // Prevent switching chat
+                         ui.startRenameConversation(item, convId, conversation.name);
+                     };
+
+                     // Delete Button
+                     const deleteBtn = document.createElement('button');
+                     deleteBtn.className = 'chat-history-action-btn';
+                     deleteBtn.title = 'Delete Chat';
+                     deleteBtn.innerHTML = `<svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>`;
+                     deleteBtn.onclick = (e) => {
+                         e.stopPropagation(); // Prevent switching chat
+                         historyManager.deleteConversation(convId);
+                     };
+
+                     actionsDiv.appendChild(renameBtn);
+                     actionsDiv.appendChild(deleteBtn);
+
+                     item.appendChild(nameSpan);
+                     item.appendChild(actionsDiv);
+
+                     // Click handler to switch conversation
+                     item.onclick = () => {
+                         if (!state.isEditingHistoryName) { // Prevent switching while renaming
+                            historyManager.switchConversation(convId);
+                         }
+                     };
+
+                     elements.chatHistory.appendChild(item);
+                 });
+             },
+
+             /** Initiates the renaming process for a history item. */
+            startRenameConversation: (itemElement, convId, currentName) => {
+                if (state.isEditingHistoryName) return; // Already renaming another
+                state.isEditingHistoryName = true;
+
+                const nameSpan = itemElement.querySelector('.chat-history-name');
+                const actionsDiv = itemElement.querySelector('.chat-history-actions');
+                nameSpan.style.display = 'none'; // Hide original name
+                actionsDiv.style.display = 'none'; // Hide actions
+
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = currentName;
+                input.className = 'chat-edit-input';
+                input.onclick = (e) => e.stopPropagation(); // Prevent chat switch on input click
+
+                const finishRename = () => {
+                    if (!state.isEditingHistoryName) return; // Already finished
+
+                    const newName = input.value.trim();
+                    itemElement.removeChild(input); // Remove input first
+                    nameSpan.style.display = '';    // Show name span again
+                    actionsDiv.style.display = '';  // Show actions again
+                    state.isEditingHistoryName = false;
+
+                    if (newName && newName !== currentName) {
+                        historyManager.renameConversation(convId, newName); // Update state and UI
+                    }
+                    // No else needed, if name is empty or same, just revert UI
+                };
+
+                input.onblur = finishRename;
+                input.onkeydown = (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        finishRename();
+                    } else if (e.key === 'Escape') {
+                        // Revert without saving
+                        input.value = currentName; // Reset value before blur triggers finishRename
+                        finishRename();
+                    }
+                };
+
+                itemElement.appendChild(input);
+                input.focus();
+                input.select();
+            },
+
+
+            /** Renders messages from an array into the chatbox */
+            loadMessagesIntoChatbox: (messages = []) => {
+                elements.chatBox.innerHTML = ''; // Clear existing messages
+                if (messages.length === 0) {
+                    elements.chatBox.innerHTML = '<div class="text-center text-gray-500 dark:text-gray-400 py-8 text-sm">Start this conversation</div>';
+                    return;
+                }
+
+                messages.forEach(msg => {
+                    let messageDataForUI;
+                    let isUser = msg.role === 'user';
+
+                    if (isUser) {
+                        // Ensure content is array format, handle potential old string format
+                        let contentArray = [];
+                        if (Array.isArray(msg.content)) {
+                            contentArray = msg.content.map(item =>
+                                (item.type === 'text' && typeof item.text === 'undefined') ? { ...item, text: "" } : item
+                            );
+                        } else if (typeof msg.content === 'string') {
+                            contentArray = [{ type: 'text', text: msg.content || "" }];
+                        } else {
+                            console.warn("Skipping user msg with invalid format:", msg); return;
+                        }
+                        // Skip completely empty user messages
+                         const hasText = contentArray.some(item => item.type === 'text' && item.text.trim() !== '');
+                         const hasImage = contentArray.some(item => item.type === 'image_url' && item.image_url?.url);
+                         if (!hasText && !hasImage) { console.warn("Skipping empty user msg:", msg); return; }
+                        messageDataForUI = contentArray;
+                    } else if (msg.role === 'assistant') {
+                        const rawContent = msg.content || "";
+                        if (!rawContent.trim()) { console.warn("Skipping empty assistant msg:", msg); return; }
+                        const { cleanedContent, thinkHtml } = utilities.extractAndCleanThinkBlocks(rawContent);
+                        const renderedMarkdown = security.renderMarkdown(cleanedContent);
+                        messageDataForUI = { renderedMarkdown, thinkHtml };
+                    } else {
+                        console.warn("Skipping msg with unknown role:", msg); return;
+                    }
+
+                    const messageDiv = ui.createMessageElement(messageDataForUI, isUser, msg.role);
+                    elements.chatBox.appendChild(messageDiv);
+
+                    const contentDiv = messageDiv.querySelector('.message-content');
+                    if (!isUser && contentDiv) {
+                        // Apply post-render steps AFTER element is in DOM
+                        try { utilities.renderMathInElement(contentDiv); } catch (e) { console.error("KaTeX load history err:", e); }
+                        try { utilities.addCopyButtonsToCodeBlocks(contentDiv); } catch (e) { console.error("CopyBtn load history err:", e); }
+                    }
+                });
+                // Scroll to bottom after loading messages
+                setTimeout(() => ui.scrollToBottom(true), 50); // Short delay, instant scroll
+            }
         };
+
+        // --- History Management Logic ---
+        const historyManager = {
+            loadAppHistory: () => {
+                try {
+                    const storedHistory = localStorage.getItem(config.LOCALSTORAGE_KEY_HISTORY);
+                    state.conversations = storedHistory ? JSON.parse(storedHistory) : {};
+                } catch (e) {
+                    console.error("Failed to parse conversation history from localStorage:", e);
+                    state.conversations = {};
+                    localStorage.removeItem(config.LOCALSTORAGE_KEY_HISTORY); // Clear potentially corrupted data
+                }
+
+                let activeId = localStorage.getItem(config.LOCALSTORAGE_KEY_ACTIVE_ID);
+
+                // Validate activeId or find a fallback
+                if (!activeId || !state.conversations[activeId]) {
+                    const conversationIds = Object.keys(state.conversations);
+                    if (conversationIds.length > 0) {
+                        // Fallback: Use the most recently created valid conversation
+                        conversationIds.sort((a, b) => state.conversations[b].createdAt - state.conversations[a].createdAt);
+                        activeId = conversationIds[0];
+                    } else {
+                        // No conversations exist, create a new one
+                        activeId = null; // Signal to create a new one
+                    }
+                }
+
+                if (!activeId) {
+                    // Create the very first conversation if none loaded/found
+                    historyManager.createNewConversation(false); // Don't save yet, will be saved by setActive
+                } else {
+                    historyManager.setActiveConversation(activeId, false); // Load messages, don't save activeId again yet
+                }
+
+                ui.updateChatHistoryUI(); // Render the sidebar list
+                console.log(`History loaded. Active chat: ${state.activeConversationId}`);
+             },
+
+             saveAppHistory: () => {
+                 try {
+                     localStorage.setItem(config.LOCALSTORAGE_KEY_HISTORY, JSON.stringify(state.conversations));
+                     // Only save active ID if it's valid
+                     if (state.activeConversationId && state.conversations[state.activeConversationId]) {
+                         localStorage.setItem(config.LOCALSTORAGE_KEY_ACTIVE_ID, state.activeConversationId);
+                     } else {
+                          localStorage.removeItem(config.LOCALSTORAGE_KEY_ACTIVE_ID);
+                     }
+                 } catch (e) {
+                     console.error("Failed to save conversation history to localStorage:", e);
+                     // Maybe display an error to the user?
+                     ui.displayError("Error saving chat history. Data might be lost on refresh.");
+                 }
+             },
+
+            getActiveConversationMessages: () => {
+                if (state.activeConversationId && state.conversations[state.activeConversationId]) {
+                    return state.conversations[state.activeConversationId].messages;
+                }
+                return []; // Return empty array if no active/valid conversation
+            },
+
+            addMessageToActiveConversation: (message) => {
+                if (state.activeConversationId && state.conversations[state.activeConversationId]) {
+                    state.conversations[state.activeConversationId].messages.push(message);
+                    historyManager.saveAppHistory(); // Save after adding a message
+                } else {
+                    console.error("Cannot add message, no active conversation set.");
+                    // Maybe create a new conversation automatically here? For now, log error.
+                }
+            },
+
+            setActiveConversation: (convId, shouldSave = true) => {
+                if (state.conversations[convId]) {
+                    state.activeConversationId = convId;
+                    const messages = historyManager.getActiveConversationMessages();
+                    ui.loadMessagesIntoChatbox(messages); // Load messages into UI
+                    ui.updateTitle(); // Update window title
+                    ui.clearInputDraft(); // Clear any pending input/images from previous chat
+                    if (shouldSave) {
+                         historyManager.saveAppHistory(); // Save the newly active ID
+                    }
+                    ui.updateChatHistoryUI(); // Re-render sidebar to show active state
+                } else {
+                    console.error(`Attempted to set active conversation to non-existent ID: ${convId}`);
+                }
+             },
+
+             createNewConversation: (setActive = true, save = true) => {
+                 if (state.isProcessing && state.currentAbortController) {
+                     state.currentAbortController.abort(); // Cancel ongoing generation if any
+                 }
+
+                 const newId = utilities.generateConversationId();
+                 const timestamp = Date.now();
+                 // Simple default name with date/time
+                 const defaultName = `Chat ${new Date(timestamp).toLocaleString()}`;
+
+                 state.conversations[newId] = {
+                     name: defaultName,
+                     createdAt: timestamp,
+                     messages: []
+                 };
+
+                 console.log(`Created new conversation: ${newId} - ${defaultName}`);
+
+                 if (setActive) {
+                    historyManager.setActiveConversation(newId, false); // Set active, but save will happen below if requested
+                 }
+                 if (save) {
+                     historyManager.saveAppHistory(); // Save the new conversation list and active ID
+                 }
+                 ui.updateChatHistoryUI(); // Update sidebar
+
+                 // Close sidebar on mobile after creating new chat
+                if (window.innerWidth < 1024) { // lg breakpoint
+                    elements.sidebar.classList.add('-translate-x-full');
+                }
+
+                 return newId; // Return the ID of the newly created conversation
+             },
+
+             switchConversation: (convId) => {
+                 if (convId === state.activeConversationId || state.isProcessing) {
+                     // Don't switch if it's already active or processing a message
+                     // Close sidebar on mobile even if not switching
+                     if (window.innerWidth < 1024 && !elements.sidebar.classList.contains('-translate-x-full')) {
+                         elements.sidebar.classList.add('-translate-x-full');
+                     }
+                     return;
+                 }
+
+                 if (state.conversations[convId]) {
+                    if (state.isProcessing && state.currentAbortController) {
+                        state.currentAbortController.abort(); // Cancel ongoing generation if any
+                    }
+                     historyManager.setActiveConversation(convId); // This handles loading messages, saving state, updating UI
+                     console.log(`Switched to conversation: ${convId}`);
+                     // Close sidebar on mobile after switching
+                    if (window.innerWidth < 1024) {
+                        elements.sidebar.classList.add('-translate-x-full');
+                    }
+                 } else {
+                     console.error(`Cannot switch to non-existent conversation: ${convId}`);
+                 }
+             },
+
+             deleteConversation: (convId) => {
+                if (state.isEditingHistoryName) return; // Don't delete while renaming
+
+                 if (!state.conversations[convId]) {
+                     console.warn(`Attempted to delete non-existent conversation: ${convId}`);
+                     return;
+                 }
+
+                 // Confirmation dialog
+                 const conversationName = state.conversations[convId].name;
+                 if (!confirm(`Are you sure you want to delete the chat "${conversationName}"? This cannot be undone.`)) {
+                     return;
+                 }
+
+                 console.log(`Deleting conversation: ${convId} - ${conversationName}`);
+                 delete state.conversations[convId]; // Remove from state
+
+                 // If the deleted conversation was the active one, switch to another or create new
+                 if (state.activeConversationId === convId) {
+                     const remainingIds = Object.keys(state.conversations);
+                     if (remainingIds.length > 0) {
+                         // Switch to the most recent remaining conversation
+                         remainingIds.sort((a, b) => state.conversations[b].createdAt - state.conversations[a].createdAt);
+                         historyManager.setActiveConversation(remainingIds[0]); // Will save automatically
+                     } else {
+                         // No conversations left, create a new default one
+                         const newId = historyManager.createNewConversation(true, true); // Create, set active, and save
+                         // setActiveConversation is called within createNewConversation if setActive is true
+                     }
+                 } else {
+                     // If a different conversation was deleted, just save the state
+                     historyManager.saveAppHistory();
+                 }
+
+                 ui.updateChatHistoryUI(); // Update the sidebar list
+             },
+
+             renameConversation: (convId, newName) => {
+                 newName = newName.trim();
+                 if (!newName) {
+                     console.warn("Cannot rename conversation to an empty name.");
+                     ui.updateChatHistoryUI(); // Re-render to show original name
+                     return;
+                 }
+
+                 if (state.conversations[convId]) {
+                     const oldName = state.conversations[convId].name;
+                     state.conversations[convId].name = newName;
+                     historyManager.saveAppHistory(); // Save the change
+                     ui.updateChatHistoryUI(); // Update the sidebar list
+                     // If the renamed chat is the active one, update the title
+                     if (convId === state.activeConversationId) {
+                         ui.updateTitle();
+                     }
+                     console.log(`Renamed conversation ${convId} from "${oldName}" to "${newName}"`);
+                 } else {
+                     console.error(`Cannot rename non-existent conversation: ${convId}`);
+                 }
+             }
+        };
+
 
         // --- Chat Logic ---
         const chat = {
             sendMessage: async () => {
-                 if (state.isProcessing) return; let userText=elements.userInput.value.trim(); let msgContent=[]; if (!userText && state.uploadedImages.length===0) return; state.isProcessing=true; ui.toggleSendButton(false); const model=elements.modelSelect.value; const vision=VISION_MODELS.includes(model); if(state.uploadedImages.length>0){ if(!vision){ui.displayError(`Model '${config.MODELS[model].name}' doesn't support images.`);state.isProcessing=false;ui.toggleSendButton(userText!==''||state.uploadedImages.length>0);return;} state.uploadedImages.forEach(img=>{msgContent.push({type:'image_url',image_url:{url:img.base64,detail:"auto"}});}); } if(userText){try{security.validateInput(userText);msgContent.push({type:'text',text:userText});}catch(e){ui.displayError(e.message);state.isProcessing=false;ui.toggleSendButton(true);return;}} const userMsg={role:'user',content:msgContent}; state.messages.push(userMsg); if(elements.chatBox.querySelector('.text-center'))elements.chatBox.innerHTML=''; const userDiv=ui.createMessageElement(msgContent, true, 'user'); elements.chatBox.appendChild(userDiv); ui.clearInput(); ui.scrollToBottom();
+                 if (state.isProcessing || state.isEditingHistoryName) return;
 
-                localStorage.setItem('chatMessages', JSON.stringify(state.messages));
-                const assistantMessageDiv = ui.createStreamingMessageElement();
-                let accumulatedDeltaContentForFinish = '';
+                 // Ensure there's an active conversation to add messages to
+                 if (!state.activeConversationId || !state.conversations[state.activeConversationId]) {
+                     console.warn("No active conversation selected. Creating a new one.");
+                     // Optionally, create a new chat automatically before sending
+                      historyManager.createNewConversation(true, true); // Create, set active, save
+                      if (!state.activeConversationId) { // Check if creation failed somehow
+                          ui.displayError("Could not establish an active chat. Please try creating one manually.");
+                          return;
+                      }
+                 }
 
-                state.currentAbortController = new AbortController();
-                try {
-                    const requestBody = { model: model, messages: state.messages, stream: true, referrer: "Fronix.ai" }; console.log('Sending:', JSON.stringify(requestBody, null, 2));
-                    const response = await fetch(config.API_ENDPOINT, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(requestBody), signal: state.currentAbortController.signal });
-                    if (!response.ok) { let eB=await response.text(); try {eB=JSON.stringify(JSON.parse(eB),null,2);} catch(e){} console.error("API Err Body:",eB); throw new Error(`API Error: ${response.status} ${response.statusText}.`); } const cT=response.headers.get('content-type'); if (!cT||!cT.includes('text/event-stream')||!response.body) { throw new Error('Expected text/event-stream.'); }
+                 const userText = elements.userInput.value.trim();
+                 const images = state.uploadedImages; // Use draft images
 
-                    const reader = response.body.getReader(); const decoder = new TextDecoder('utf-8'); let buffer = '';
-                    while (true) {
-                        const { value, done } = await reader.read(); if (done) { console.log('Stream done.'); break; }
-                        buffer += decoder.decode(value, { stream: true }); let lines = buffer.split('\n'); buffer = lines.pop() || '';
-                        for (const line of lines) {
-                            if (!line.startsWith('data: ')) continue; const data = line.substring(6); if (data === '[DONE]') { console.log('[DONE] received.'); continue; }
-                            try {
-                                const parsed = JSON.parse(data); const delta = parsed.choices?.[0]?.delta; if (!delta || !delta.content) continue;
-                                const deltaContent = delta.content;
-                                accumulatedDeltaContentForFinish += deltaContent;
-                                ui.updateStreamingMessage(assistantMessageDiv, deltaContent, false);
-                            } catch (e) { console.error('Stream parse err:', data, e); }
-                        }
-                    }
+                 if (!userText && images.length === 0) return;
 
-                    // Finalize: Pass accumulated raw content for final processing
-                    ui.updateStreamingMessage(assistantMessageDiv, accumulatedDeltaContentForFinish, true);
-                    const finalAssistantMessage = { role: 'assistant', content: accumulatedDeltaContentForFinish };
-                    if (finalAssistantMessage.content && finalAssistantMessage.content.trim()) { state.messages.push(finalAssistantMessage); localStorage.setItem('chatMessages', JSON.stringify(state.messages)); }
-                    else { console.warn("Stream empty."); assistantMessageDiv.remove(); }
-                } catch (error) {
-                     console.error('sendMessage error:', error); if (assistantMessageDiv && document.body.contains(assistantMessageDiv)) assistantMessageDiv.remove();
-                     if (error.name !== 'AbortError') ui.displayError(error.message || "Unknown error."); else console.log("Request aborted.");
-                } finally {
-                     state.isProcessing = false; ui.toggleSendButton(elements.userInput.value.trim() !== '' || state.uploadedImages.length > 0); state.currentAbortController = null;
-                }
-            },
-        };
+                 state.isProcessing = true;
+                 ui.toggleSendButton(false);
 
-        // --- Event Listeners ---
-         elements.sendBtn.addEventListener('click', () => chat.sendMessage());
-         elements.userInput.addEventListener('keypress', (e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); chat.sendMessage(); } });
-         elements.userInput.addEventListener('input', ui.adjustTextAreaHeight);
-         elements.userInput.addEventListener('input', () => { ui.toggleSendButton(elements.userInput.value.trim() !== '' || state.uploadedImages.length > 0); });
-         elements.newChatBtn.addEventListener('click', () => { if (state.currentAbortController) state.currentAbortController.abort(); state.messages = []; state.uploadedImages = []; localStorage.removeItem('chatMessages'); elements.chatBox.innerHTML = '<div class="text-center text-gray-500 dark:text-gray-400 py-8 text-sm">Start a new conversation</div>'; ui.clearInput(); ui.updateModelIndicator(); ui.updateChatHistoryUI(); console.log("New chat."); });
-         elements.imageUpload.addEventListener('change', (e) => { const files = e.target.files; if (!files || files.length === 0) return; const maxI = 5; const maxMB = 10; if (state.uploadedImages.length + files.length > maxI) { ui.displayError(`Max ${maxI} images.`); e.target.value = ''; return; } const selM = elements.modelSelect.value; if (!VISION_MODELS.includes(selM)) { ui.displayError(`Model '${config.MODELS[selM]?.name || selM}' doesn't support images.`); e.target.value = ''; return; } Array.from(files).forEach(f => { if (!f.type.startsWith('image/')) return; if (f.size > maxMB * 1024 * 1024) { ui.displayError(`"${f.name}" > ${maxMB}MB.`); return; } if (state.uploadedImages.length >= maxI) return; const r = new FileReader(); r.onload = (ev) => { if (state.uploadedImages.length < maxI) { state.uploadedImages.push({ name: f.name, base64: ev.target.result }); ui.addImagePreview(f.name, ev.target.result); } }; r.onerror = () => ui.displayError(`Error reading ${f.name}.`); r.readAsDataURL(f); }); e.target.value = ''; });
-         elements.menuBtn.addEventListener('click', () => { elements.sidebar.classList.toggle('-translate-x-full'); });
-         elements.modelSelect.addEventListener('change', () => { ui.updateModelIndicator(); if (state.uploadedImages.length > 0 && !VISION_MODELS.includes(elements.modelSelect.value)) ui.displayError(`Warning: Selected model doesn't support images.`); });
+                 const selectedModel = elements.modelSelect.value;
+                 const supportsVision = VISION_MODELS.includes(selectedModel);
+                 let messageContent = [];
 
-
-        // --- Initial Load ---
-        const loadSavedMessages = () => {
-             state.messages = (JSON.parse(localStorage.getItem('chatMessages') || '[]')).filter(msg => msg.role !== 'tool');
-             localStorage.setItem('chatMessages', JSON.stringify(state.messages));
-
-             if (state.messages.length > 0) {
-                 elements.chatBox.innerHTML = '';
-                 state.messages.forEach(msg => {
-                     let messageDataForUI; let contentDiv = null; // Define contentDiv here
-                     if (msg.role === 'user') { let c = []; if (Array.isArray(msg.content)) { c = msg.content.map(item => (item.type === 'text' && (item.text === null || typeof item.text === 'undefined')) ? { ...item, text: "" } : item); } else { c = [{ type: 'text', text: msg.content || "" }]; } messageDataForUI = c; }
-                     else if (msg.role === 'assistant') {
-                          const rawContent = msg.content || "";
-                          const { cleanedContent, thinkHtml } = utilities.extractAndCleanThinkBlocks(rawContent);
-                          const renderedMarkdown = security.renderMarkdown(cleanedContent); // Includes pre-process math
-                          messageDataForUI = { renderedMarkdown: renderedMarkdown, thinkHtml: thinkHtml };
+                 if (images.length > 0) {
+                     if (!supportsVision) {
+                         ui.displayError(/* ... image model error ... */);
+                        state.isProcessing = false; ui.toggleSendButton(true); return;
                      }
-                     else { console.warn("Unknown history role:", msg); return; }
+                     images.forEach(img => messageContent.push({ type: 'image_url', image_url: { url: img.base64, detail: "auto" } }));
+                 }
+                 if (userText) {
+                     try {
+                         security.validateInput(userText);
+                         messageContent.push({ type: 'text', text: userText });
+                     } catch (e) { ui.displayError(e.message); state.isProcessing = false; ui.toggleSendButton(true); return; }
+                 }
 
-                     if (msg.role === 'assistant' && (!messageDataForUI.renderedMarkdown.trim() && !messageDataForUI.thinkHtml.trim())) { console.warn("Skip empty assist history:", msg); return; }
-                     if (msg.role === 'user' && (!Array.isArray(messageDataForUI) || messageDataForUI.filter(item => item.type === 'text' && item.text.trim() !== '').length === 0 && messageDataForUI.filter(item => item.type === 'image_url').length === 0)) { console.warn("Skip empty user history:", msg); return; }
+                 const userMessage = { role: 'user', content: messageContent };
+                 // Add user message to the *active* conversation's history
+                 historyManager.addMessageToActiveConversation(userMessage);
 
-                    const messageDiv = ui.createMessageElement(messageDataForUI, msg.role === 'user', msg.role);
-                    elements.chatBox.appendChild(messageDiv);
+                 // --- Update UI ---
+                 const initialMsg = elements.chatBox.querySelector('.text-center');
+                 if (initialMsg) initialMsg.remove();
+                 const userMessageDiv = ui.createMessageElement(messageContent, true, 'user');
+                 elements.chatBox.appendChild(userMessageDiv);
+                 ui.clearInputDraft(); // Clear draft input/images
+                 ui.scrollToBottom();
+                 // No need to update history UI here, just added a message
+                 // --- End Update UI ---
 
-                    // Find contentDiv *after* appending messageDiv
-                    contentDiv = messageDiv.querySelector('.message-content');
+                 const assistantMessageDiv = ui.createStreamingMessageElement();
+                 let accumulatedDeltaContentForFinish = '';
 
-                    if (msg.role === 'assistant' && contentDiv) {
-                         // Apply post-render steps AFTER appending and finding contentDiv
-                         try { utilities.renderMathInElement(contentDiv); } catch (e) { console.error("KaTeX load history err:", e); }
-                         try { utilities.addCopyButtonsToCodeBlocks(contentDiv); } catch (e) { console.error("CopyBtn load history err:", e); }
-                    } else if (msg.role === 'assistant' && !contentDiv) {
-                         console.error("Could not find .message-content in loaded assistant message:", messageDiv);
-                    }
+                 state.currentAbortController = new AbortController();
+                 try {
+                     // Use messages from the *active* conversation for context
+                     const messagesForAPI = historyManager.getActiveConversationMessages();
+
+                     const requestBody = {
+                         model: selectedModel,
+                         messages: messagesForAPI, // Send context from current chat
+                         stream: true,
+                         referrer: "Fronix.ai"
+                     };
+                     console.log('Sending API request for chat:', state.activeConversationId);
+
+                     const response = await fetch(config.API_ENDPOINT, { /* ... fetch options ... */
+                         method: 'POST', headers: { 'Content-Type': 'application/json' },
+                         body: JSON.stringify(requestBody), signal: state.currentAbortController.signal
+                      });
+
+                     if (!response.ok) { /* ... error handling ... */
+                        let errorBody = await response.text(); try {errorBody = JSON.stringify(JSON.parse(errorBody), null, 2);}catch(e){}
+                        console.error("API Error Response:", errorBody); throw new Error(`API Error: ${response.status} ${response.statusText}.`);
+                      }
+                     const contentType = response.headers.get('content-type');
+                     if (!contentType || !contentType.includes('text/event-stream') || !response.body) { throw new Error('Expected text/event-stream.'); }
+
+                     // --- Stream Processing ---
+                     const reader = response.body.getReader();
+                     const decoder = new TextDecoder('utf-8');
+                     let buffer = '';
+                     while (true) {
+                         const { value, done } = await reader.read(); if (done) break;
+                         buffer += decoder.decode(value, { stream: true });
+                         let lines = buffer.split('\n'); buffer = lines.pop() || '';
+                         for (const line of lines) {
+                             if (!line.startsWith('data: ')) continue; const data = line.substring(6); if (data === '[DONE]') continue;
+                             try {
+                                 const parsed = JSON.parse(data); const delta = parsed.choices?.[0]?.delta; if (!delta || !delta.content) continue;
+                                 const deltaContent = delta.content;
+                                 accumulatedDeltaContentForFinish += deltaContent;
+                                 ui.updateStreamingMessage(assistantMessageDiv, deltaContent, false);
+                             } catch (e) { console.error('Stream parse err:', data, e); }
+                         }
+                     }
+                     // --- End Stream Processing ---
+
+                     ui.updateStreamingMessage(assistantMessageDiv, '', true, accumulatedDeltaContentForFinish); // Finalize UI
+
+                     const finalAssistantMessage = { role: 'assistant', content: accumulatedDeltaContentForFinish };
+                     if (finalAssistantMessage.content && finalAssistantMessage.content.trim()) {
+                         // Add assistant message to the *active* conversation
+                         historyManager.addMessageToActiveConversation(finalAssistantMessage);
+                     } else {
+                         console.warn("Stream empty."); assistantMessageDiv.remove();
+                         // Also remove the preceding user message if the assistant response was empty? Optional.
+                         // For now, leave user message.
+                     }
+                 } catch (error) {
+                     console.error('sendMessage error:', error);
+                     if (assistantMessageDiv && document.body.contains(assistantMessageDiv)) assistantMessageDiv.remove();
+                     if (error.name !== 'AbortError') { ui.displayError(error.message || "Unknown error."); }
+                      else { console.log("Request aborted."); }
+                 } finally {
+                     state.isProcessing = false;
+                     ui.toggleSendButton(elements.userInput.value.trim() !== '' || state.uploadedImages.length > 0);
+                     state.currentAbortController = null;
+                     ui.scrollToBottom(); // Ensure scroll after response/error
+                 }
+             },
+
+            /** Handles file selection for image uploads (attaches to current draft message). */
+             handleImageUpload: (event) => {
+                 const files = event.target.files;
+                 if (!files || files.length === 0 || state.isEditingHistoryName) return; // Prevent during rename
+
+                 const currentImageCount = state.uploadedImages.length; // Check draft images
+                 const maxImages = config.MAX_IMAGES;
+                 const maxFileSizeMB = config.MAX_IMAGE_MB;
+
+                 if (currentImageCount + files.length > maxImages) { /* ... max images error ... */
+                    ui.displayError(`Max ${maxImages} images allowed. You have ${currentImageCount}, tried to add ${files.length}.`);
+                    event.target.value = ''; return;
+                 }
+
+                 const selectedModel = elements.modelSelect.value;
+                 if (!VISION_MODELS.includes(selectedModel)) { /* ... model support error ... */
+                     ui.displayError(`Model '${config.MODELS[selectedModel]?.name || selectedModel}' doesn't support images.`);
+                    event.target.value = ''; return;
+                 }
+
+                 let processedCount = 0;
+                 Array.from(files).forEach(file => {
+                     if (state.uploadedImages.length >= maxImages) return;
+                     if (!file.type.startsWith('image/')) { console.warn(`Skipping non-image: ${file.name}`); return; }
+                     if (file.size > maxFileSizeMB * 1024 * 1024) { ui.displayError(`"${file.name}" > ${maxFileSizeMB}MB.`); return; }
+
+                     const reader = new FileReader();
+                     reader.onload = (e) => {
+                         if (state.uploadedImages.length < maxImages) {
+                             const imageData = { name: file.name, base64: e.target.result };
+                             state.uploadedImages.push(imageData); // Add to draft state
+                             ui.addImagePreview(imageData.name, imageData.base64);
+                             processedCount++;
+                             if (processedCount > 0) ui.toggleSendButton(true);
+                         }
+                     };
+                     reader.onerror = () => ui.displayError(`Error reading ${file.name}.`);
+                     reader.readAsDataURL(file);
                  });
-                 setTimeout(ui.scrollToBottom, 150);
-             } else {
-                 elements.chatBox.innerHTML = '<div class="text-center text-gray-500 dark:text-gray-400 py-8 text-sm">Start a new conversation</div>';
+                 event.target.value = ''; // Clear input
              }
         };
 
+        // --- Event Listeners ---
+        function setupEventListeners() {
+             elements.sendBtn.addEventListener('click', () => chat.sendMessage());
+             elements.userInput.addEventListener('keypress', (e) => {
+                 if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); chat.sendMessage(); }
+             });
+             elements.userInput.addEventListener('input', () => {
+                 ui.adjustTextAreaHeight();
+                 ui.toggleSendButton(elements.userInput.value.trim() !== '' || state.uploadedImages.length > 0);
+             });
+
+             // New Chat button now calls historyManager
+             elements.newChatBtn.addEventListener('click', () => {
+                  if (!state.isEditingHistoryName) { // Prevent if renaming
+                     historyManager.createNewConversation();
+                  }
+             });
+
+            // Image Upload listeners
+             elements.imageUploadAttach.addEventListener('change', chat.handleImageUpload);
+             const attachLabel = elements.imageUploadAttach.previousElementSibling;
+             if (attachLabel && attachLabel.tagName === 'LABEL') { attachLabel.setAttribute('for', 'image-upload-attach'); }
+
+             // Sidebar toggle button
+             elements.menuBtn.addEventListener('click', () => {
+                  if (!state.isEditingHistoryName) { // Prevent if renaming interferes
+                    elements.sidebar.classList.toggle('-translate-x-full');
+                  }
+             });
+
+             // Close sidebar clicking outside
+             document.addEventListener('click', (event) => {
+                if (window.innerWidth < 1024 && !state.isEditingHistoryName) {
+                    const isClickInsideSidebar = elements.sidebar.contains(event.target);
+                    const isClickOnMenuBtn = elements.menuBtn.contains(event.target);
+                    const isSidebarVisible = !elements.sidebar.classList.contains('-translate-x-full');
+                    if (!isClickInsideSidebar && !isClickOnMenuBtn && isSidebarVisible) {
+                        elements.sidebar.classList.add('-translate-x-full');
+                    }
+                }
+            });
+
+             // Model selection change
+             elements.modelSelect.addEventListener('change', () => {
+                 ui.updateTitle(); // Update window title
+                 if (state.uploadedImages.length > 0 && !VISION_MODELS.includes(elements.modelSelect.value)) {
+                     ui.displayError(`Warning: Selected model doesn't support images.`);
+                 } else {
+                     ui.toggleSendButton(elements.userInput.value.trim() !== '' || state.uploadedImages.length > 0);
+                 }
+             });
+        }
+
+
         // --- Initialization ---
         document.addEventListener('DOMContentLoaded', () => {
-             if(typeof marked==='undefined')console.error('Marked.js failed!'); if(typeof DOMPurify==='undefined')console.error('DOMPurify failed!'); if(typeof hljs==='undefined')console.warn('Highlight.js failed!'); else {hljs.configure({ignoreUnescapedHTML:true});console.log("hljs configured.");}
-             // Use a flag or interval to wait for KaTeX if necessary, simple check for now
-             const katexCheckInterval = setInterval(() => {
-                  if(typeof renderMathInElement === 'function') {
-                       console.log("KaTeX auto-render ready.");
-                       clearInterval(katexCheckInterval);
-                       // Re-run rendering on existing messages if needed, though loadSavedMessages should handle it now
-                       document.querySelectorAll('.message-content').forEach(el => utilities.renderMathInElement(el));
-                  } else {
-                      console.log("Waiting for KaTeX auto-render...");
-                  }
-             }, 200);
-             setTimeout(() => clearInterval(katexCheckInterval), 5000); // Stop checking after 5s
+             console.log("DOM Loaded. Initializing Fronix with History...");
 
-            populateModelSelect();
-            loadSavedMessages(); // Applies render steps including KaTeX now
-            ui.updateModelIndicator();
-            ui.adjustTextAreaHeight();
-            ui.toggleSendButton(false);
-            ui.updateChatHistoryUI();
+             // Library checks
+             if (typeof marked === 'undefined') console.error('FATAL: marked.js failed!');
+             if (typeof DOMPurify === 'undefined') console.error('FATAL: DOMPurify failed!');
+             if (typeof hljs === 'undefined') console.warn('hljs missing');
+             else { try { hljs.configure({ ignoreUnescapedHTML: true }); console.log("hljs configured."); } catch (e) { console.error("hljs config error:", e); } }
+
+             // KaTeX readiness check
+             window.katexAutoRenderReady = window.katexAutoRenderReady || false;
+             const katexCheckInterval = setInterval(() => {
+                 if (window.katexAutoRenderReady && typeof renderMathInElement === 'function') {
+                     console.log("KaTeX auto-render ready.");
+                     clearInterval(katexCheckInterval);
+                     // Re-run on existing messages (though loadMessagesIntoChatbox should handle it)
+                     // document.querySelectorAll('.message-content').forEach(el => utilities.renderMathInElement(el));
+                 }
+             }, 250);
+             setTimeout(() => clearInterval(katexCheckInterval), 10000); // Timeout
+
+             populateModelSelect();
+             historyManager.loadAppHistory(); // <<< Load history and initial chat
+             // loadAppHistory calls setActiveConversation which calls loadMessagesIntoChatbox -> renders messages
+             // loadAppHistory calls updateChatHistoryUI -> renders sidebar
+             // loadAppHistory calls updateTitle -> sets initial title
+
+             ui.adjustTextAreaHeight();
+             // Send button state determined by loaded chat / cleared draft
+             ui.toggleSendButton(elements.userInput.value.trim() !== '' || state.uploadedImages.length > 0);
+             setupEventListeners();
+
+             console.log("Initialization complete.");
         });
 
     </script>
