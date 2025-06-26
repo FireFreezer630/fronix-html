@@ -536,7 +536,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
              // Display thinking bubble and get bot response
              const thinkingBubble = appendMessage('', 'bot', true);
-             await fetchAndStream(currentConversation, thinkingBubble);
+             await fetchAndStream(currentConversation.messages, chatState.settings.model, thinkingBubble, currentConversation);
 
 
         } else {
@@ -561,9 +561,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
              // Display thinking bubble and get bot response
              const thinkingBubble = appendMessage('', 'bot', true);
-             await fetchAndStream(currentConversation, thinkingBubble);
-        }
-    }
+             await fetchAndStream(currentConversation.messages, chatState.settings.model, thinkingBubble, currentConversation);
+         }
+     }
 
 
      // New helper function to handle streaming response after edit
@@ -589,6 +589,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Modify fetchAndStream to save bot message to state
     async function fetchAndStream(messagesForApi, model, thinkingBubble, conversation) {
+        console.log('messagesForApi received in fetchAndStream:', messagesForApi);
 
         const getCurrentDate = () => new Date().toISOString().split('T')[0];
         let finalSystemPrompt = chatState.settings.systemPrompt;
