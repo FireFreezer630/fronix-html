@@ -288,6 +288,55 @@ body { font-family: var(--font-family); background-color: var(--body-bg); color:
 .modal-body textarea, .modal-body input { width: 100%; padding: 12px; border-radius: 10px; border: 1px solid rgba(0,0,0,0.1); font-family: var(--font-family); font-size: 1rem; margin-bottom: 16px; background-color: rgba(255,255,255,0.7); }
 .modal-body textarea { resize: vertical; min-height: 100px; }
 
+/* --- Theme Toggle Switch --- */
+.modal-body .theme-switch {
+    position: relative;
+    display: inline-block;
+    width: 60px;
+    height: 34px;
+    margin-bottom: 16px; /* Add some space below the switch */
+}
+
+.modal-body .theme-switch .switch-checkbox {
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+.modal-body .switch-label {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: #ccc; /* Default background (light mode off) */
+    transition: .4s;
+    border-radius: 34px;
+}
+
+.modal-body .switch-label:before {
+    position: absolute;
+    content: "";
+    height: 26px;
+    width: 26px;
+    left: 4px;
+    bottom: 4px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+}
+
+/* Checked state (dark mode on) */
+.modal-body .switch-checkbox:checked + .switch-label {
+    background-color: #2196F3; /* Blue background for dark mode */
+}
+
+.modal-body .switch-checkbox:checked + .switch-label:before {
+    transform: translateX(26px);
+}
+
+
 /* --- Responsive Design --- */
 @media (max-width: 900px) {
     .chatbot-container.sidebar-open-desktop .chat-area-wrapper { margin-left: 0; }
