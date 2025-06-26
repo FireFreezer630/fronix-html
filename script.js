@@ -608,7 +608,12 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const finalMessages = [{ role: 'system', content: finalSystemPrompt }, ...messagesForApi];
         
-        const payload = { model, messages: finalMessages, stream: true };
+        const payload = {
+            model,
+            messages: finalMessages,
+            stream: true,
+            token: 'a6NJMiLY9hQ5piNf' // Added token parameter
+        };
         let botMessageContent = '';
         let botMessageIndex = -1; // To track the index of the bot message being streamed
 
