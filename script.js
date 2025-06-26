@@ -26,6 +26,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let previewObjectURL = null;
     let previousModel = 'openai'; // Stores the model before switching to searchgpt
     let isDarkMode = false; // Initial state for theme
+    let isNewChatPending = false; // State to track if a new chat is pending
+    let conversationCounter = 1; // To name new chats
 
     // --- Theme Management ---
     const applyTheme = (darkModeEnabled) => {
@@ -70,6 +72,11 @@ document.addEventListener('DOMContentLoaded', () => {
             // In a real app, you would load this chat's history.
             // For now, we just reset to the welcome screen.
             resetChatView();
+
+            // Close sidebar if on smaller screen and sidebar is open
+            if (window.innerWidth <= 900 && sidebar.classList.contains('active')) {
+                toggleSidebar();
+            }
         });
 
         renameBtn.addEventListener('click', () => {
@@ -85,56 +92,68 @@ document.addEventListener('DOMContentLoaded', () => {
             if (confirm('Are you sure you want to delete this conversation?')) {
                 const wasActive = item.classList.contains('active');
                 item.remove();
-                // If the active chat was deleted, select the top one or show welcome screen
-                if (wasActive && conversationList.children.length > 0) {
-                    conversationList.firstElementChild.classList.add('active');
+                console.log('Conversation item removed.');
+
+                // If the active chat was deleted, select the top one or create a new default
+                if (wasActive) {
+                    if (conversationList.children.length > 0) {
+                        conversationList.firstElementChild.classList.add('active');
+                         console.log('Selected first conversation as active.');
+                    } else {
+                        // If list is empty, create a new default conversation
+                         console.log('Conversation list empty, creating new default chat.');
+                        createDefaultConversation();
+                    }
+                    resetChatView(); // Reset chat view after changing active chat or creating new
                 } else if (conversationList.children.length === 0) {
-                    resetChatView();
-                }
-            }
-        });
+                     // If a non-active chat was deleted and the list became empty
+                     console.log('Conversation list empty after deleting non-active chat, creating new default chat.');
+                     createDefaultConversation();
+                     resetChatView(); // Reset chat view
+                 }
+             }
+         });
     };
-    
+
+    const createDefaultConversation = () => {
+        const newDefaultName = "New Chat";
+        const newDefaultItem = document.createElement('li');
+        newDefaultItem.className = 'conversation-item active';
+        newDefaultItem.innerHTML = `
+             <a href="#" class="conversation-link">
+                 <span>${newDefaultName.trim()}</span>
+             </a>
+             <div class="conversation-actions">
+                 <button class="action-btn rename-btn" aria-label="Rename conversation"><i data-lucide="file-pen-line"></i></button>
+                 <button class="action-btn delete-btn" aria-label="Delete conversation"><i data-lucide="trash-2"></i></button>
+             </div>
+         `;
+         conversationList.prepend(newDefaultItem);
+         addConversationListeners(newDefaultItem); // Add listeners to the new default item
+         lucide.createIcons();
+         console.log('New default conversation created and set as active.');
+    };
+
     // Add listeners to the initial conversation item
     document.querySelectorAll('.conversation-item').forEach(addConversationListeners);
+    if (conversationList.children.length === 0) {
+        createDefaultConversation(); // Ensure at least one conversation exists on load
+    }
     
     // New Chat Button Logic
     newChatButton.addEventListener('click', () => {
         console.log('New Chat button clicked');
-        try {
-            const newName = "New Chat"; // Automatically set a default name
-            // Removed prompt and related check as per user's feedback about disabled pop-up
+        // Deselect current active chat
+        const currentActive = document.querySelector('.conversation-item.active');
+        if (currentActive) currentActive.classList.remove('active');
 
-            // Deselect current active chat
-            const currentActive = document.querySelector('.conversation-item.active');
-            if (currentActive) currentActive.classList.remove('active');
+        resetChatView();
+        isNewChatPending = true; // Mark that a new chat is pending
+        console.log('New chat pending state set.');
 
-            // Create new list item
-            const newItem = document.createElement('li');
-            newItem.className = 'conversation-item active';
-            newItem.innerHTML = `
-                <a href="#" class="conversation-link">
-                    <i data-lucide="message-square"></i>
-                    <span>${newName.trim()}</span>
-                </a>
-                <div class="conversation-actions">
-                    <button class="action-btn rename-btn" aria-label="Rename conversation"><i data-lucide="file-pen-line"></i></button>
-                    <button class="action-btn delete-btn" aria-label="Delete conversation"><i data-lucide="trash-2"></i></button>
-                </div>
-            `;
-
-            console.log('New conversation item created:', newItem);
-            conversationList.prepend(newItem);
-            console.log('New conversation item prepended.');
-            addConversationListeners(newItem);
-            console.log('Event listeners added to new item.');
-            lucide.createIcons();
-            console.log('Lucide icons created.');
-            resetChatView();
-            console.log('Chat view reset.');
-
-        } catch (error) {
-            console.error('Error in New Chat button click handler:', error);
+        // Close sidebar if on smaller screen and sidebar is open
+        if (window.innerWidth <= 900 && sidebar.classList.contains('active')) {
+            toggleSidebar();
         }
     });
 
@@ -228,6 +247,30 @@ document.addEventListener('DOMContentLoaded', () => {
             messageLog.classList.remove('hidden');
         }
 
+        if (isNewChatPending) {
+            // Create and add new chat item on the first message
+            const newName = `New Chat ${conversationCounter++}`; // Default name
+            const newItem = document.createElement('li');
+            newItem.className = 'conversation-item active';
+            newItem.innerHTML = `
+                <a href="#" class="conversation-link">
+                    <span>${newName.trim()}</span>
+                </a>
+                <div class="conversation-actions">
+                    <button class="action-btn rename-btn" aria-label="Rename conversation"><i data-lucide="file-pen-line"></i></button>
+                    <button class="action-btn delete-btn" aria-label="Delete conversation"><i data-lucide="trash-2"></i></button>
+                </div>
+            `;
+            console.log('Creating new conversation item on first message:', newItem);
+            conversationList.prepend(newItem);
+            addConversationListeners(newItem); // Add listeners to the new item
+            lucide.createIcons(); // Re-create icons including for the new item
+
+            isNewChatPending = false; // Reset the pending state
+            console.log('New chat pending state reset.');
+        }
+
+        // Proceed with sending the message
         appendMessage(messageText, 'user', false, imageURLForBubble);
         chatInput.value = '';
         imagePreviewContainer.innerHTML = '';
