@@ -18,11 +18,42 @@ document.addEventListener('DOMContentLoaded', () => {
     const container = document.querySelector('.chatbot-container');
     const conversationList = document.getElementById('conversation-list');
     const newChatButton = document.querySelector('.new-chat-button');
-
+    const webSearchButton = document.querySelector('.web-search-button');
+    const themeToggle = document.getElementById('theme-toggle');
 
     // --- State Variables ---
     let attachedFile = null;
     let previewObjectURL = null;
+    let previousModel = 'openai'; // Stores the model before switching to searchgpt
+    let isDarkMode = false; // Initial state for theme
+
+    // --- Theme Management ---
+    const applyTheme = (darkModeEnabled) => {
+        if (darkModeEnabled) {
+            document.body.classList.add('dark-mode');
+            isDarkMode = true;
+        } else {
+            document.body.classList.remove('dark-mode');
+            isDarkMode = false;
+        }
+        localStorage.setItem('theme', isDarkMode ? 'dark' : 'light');
+    };
+
+    // Apply theme on initial load
+    const savedTheme = localStorage.getItem('theme');
+    if (savedTheme === 'dark') {
+        applyTheme(true);
+        if (themeToggle) themeToggle.checked = true;
+    } else {
+        applyTheme(false);
+        if (themeToggle) themeToggle.checked = false;
+    }
+
+    if (themeToggle) {
+        themeToggle.addEventListener('change', (event) => {
+            applyTheme(event.target.checked);
+        });
+    }
 
     // --- Sidebar & Chat Management ---
 
@@ -111,6 +142,20 @@ document.addEventListener('DOMContentLoaded', () => {
     sidebarToggle.addEventListener('click', toggleSidebar);
     sidebarOverlay.addEventListener('click', toggleSidebar);
 
+    // --- Web Search Button Logic ---
+    webSearchButton.addEventListener('click', () => {
+        const modelSelect = document.getElementById('model-select');
+        if (webSearchButton.classList.toggle('active')) {
+            // Web search is enabled
+            previousModel = modelSelect.value; // Save current model
+            modelSelect.value = 'searchgpt';
+        } else {
+            // Web search is disabled
+            modelSelect.value = previousModel; // Restore previous model
+        }
+        lucide.createIcons(); // Re-render icons if needed (e.g., if icon changes for active state)
+    });
+
 
     // --- Settings Modal Logic ---
     const toggleSettingsModal = () => {
@@ -180,24 +225,28 @@ document.addEventListener('DOMContentLoaded', () => {
         previewObjectURL = null;
 
         const thinkingBubble = appendMessage('', 'bot', true);
-
-        const systemPrompt = document.getElementById('system-prompt').value.trim();
         const selectedModel = document.getElementById('model-select').value.trim();
-        
+        let systemPromptContent = document.getElementById('system-prompt').value.trim();
+
+        // Use a different system prompt for searchgpt
+        if (selectedModel === 'searchgpt') {
+            systemPromptContent = "You are a helpful assistant that can answer questions by performing web searches.";
+        }
+
         const messages = [];
-        if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
+        if (systemPromptContent) messages.push({ role: 'system', content: systemPromptContent });
 
         const userContent = [];
         const textContent = messageText || (imageFile ? "What's in this image?" : "");
         if (textContent) userContent.push({ type: 'text', text: textContent });
-        
+
         if (imageFile) {
             const base64Image = await toBase64(imageFile);
             userContent.push({ type: 'image_url', image_url: { url: `data:${imageFile.type};base64,${base64Image}` } });
         }
-        
+
         messages.push({ role: 'user', content: userContent });
-        
+
         await fetchAndStream(messages, selectedModel, thinkingBubble);
     }
     
