@@ -606,6 +606,18 @@ document.addEventListener('DOMContentLoaded', () => {
             finalSystemPrompt = `${defaultPrompt}\n${chatState.settings.additionalSystemPrompt}\ndate: ${getCurrentDate()}`;
         }
         
+        // Exclude the very first bot message if it's the initial greeting
+        const messagesToSend = messagesForApi;
+        if (messagesToSend.length > 0 && messagesToSend[0].role === 'bot' && conversation.messages.length > messagesToSend.length) {
+             // Check if the first message in messagesToSend is the very first message in the full conversation
+             // This is a heuristic; a more robust way might involve a flag on the initial message
+             const firstConversationMessage = conversation.messages[0];
+             if (firstConversationMessage.role === 'bot' && firstConversationMessage.content === messagesToSend[0].content) {
+                  console.log('Excluding initial bot greeting from API payload.');
+                  messagesToSend.shift(); // Remove the first message
+             }
+        }
+
         const finalMessages = [{ role: 'system', content: finalSystemPrompt }, ...messagesForApi];
         
         const payload = {
@@ -622,6 +634,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         while (retries < maxRetries) {
             try {
+                console.log('Sending API payload:', payload); // Log the payload before sending
                 const response = await fetch('https://text.pollinations.ai/openai', {
                     method: 'POST',
                     headers: {
