@@ -54,6 +54,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 chatState.settings.theme = chatState.settings.theme || 'light'; // Default theme
                 chatState.settings.model = chatState.settings.model || 'openai'; // Default model
                 chatState.settings.systemPrompt = chatState.settings.systemPrompt || ''; // Default system prompt
+                chatState.settings.additionalSystemPrompt = chatState.settings.additionalSystemPrompt || ''; // Default additional system prompt
+                chatState.settings.previousModel = chatState.settings.previousModel || 'openai'; // Default previous model
                 // Ensure active conversation ID is valid or default
                  if (!chatState.conversations.some(conv => conv.id === chatState.activeConversationId)) {
                      chatState.activeConversationId = chatState.conversations.length > 0 ? chatState.conversations[0].id : null;
@@ -87,7 +89,8 @@ document.addEventListener('DOMContentLoaded', () => {
               settings: {
                   theme: 'light',
                   model: 'openai',
-                  systemPrompt: "You are Fronix, a large language model being used in a website called Fronix made by Z-SHADOW ULTRA.\nYou are chatting with the user via the Fronix web app. This means most of the time your lines should be a sentence or two, unless the user's request requires reasoning or long-form outputs. Never use emojis, unless explicitly asked to.\nKnowledge cutoff: 2024-06\nCurrent date: 2025-05-15\n\nImage input capabilities: Enabled\nPersonality: v2\nOver the course of the conversation, you adapt to the user’s tone and preference. Try to match the user’s vibe, tone, and generally how they are speaking. You want the conversation to feel natural. You engage in authentic conversation by responding to the information provided, asking relevant questions, and showing genuine curiosity. If natural, continue the conversation with casual conversation.\n\nIf the user asks to web search or get latest information or information subjected to change tell him to use the web search option which in at the left hand side of the message text box ."
+                  systemPrompt: "You are Fronix, a large language model being used in a website called Fronix made by Z-SHADOW ULTRA.\nYou are chatting with the user via the Fronix web app. This means most of the time your lines should be a sentence or two, unless the user's request requires reasoning or long-form outputs. Never use emojis, unless explicitly asked to.\nKnowledge cutoff: 2024-06\nCurrent date: 2025-05-15\n\nImage input capabilities: Enabled\nPersonality: v2\nOver the course of the conversation, you adapt to the user’s tone and preference. Try to match the user’s vibe, tone, and generally how they are speaking. You want the conversation to feel natural. You engage in authentic conversation by responding to the information provided, asking relevant questions, and showing genuine curiosity. If natural, continue the conversation with casual conversation.\n\nIf the user asks to web search or get latest information or information subjected to change tell him to use the web search option which in at the left hand side of the message text box .",
+                  additionalSystemPrompt: '' // Initialize additional system prompt
               },
               activeConversationId: initialConversationId
          };
@@ -318,9 +321,10 @@ document.addEventListener('DOMContentLoaded', () => {
         modelSelect.disabled = isSearchActive;
 
         if (isSearchActive) {
+             chatState.settings.previousModel = chatState.settings.model; // Store current model
              chatState.settings.model = 'searchgpt';
         } else {
-            chatState.settings.model = 'openai';
+            chatState.settings.model = chatState.settings.previousModel || 'openai'; // Restore previous model or default
         }
         
         modelSelect.value = chatState.settings.model;
@@ -335,12 +339,12 @@ document.addEventListener('DOMContentLoaded', () => {
          if (!settingsModal.classList.contains('hidden')) {
              // Load settings into modal when opening
              modelSelect.value = chatState.settings.model;
-             systemPromptInput.value = chatState.settings.systemPrompt;
+             systemPromptInput.value = chatState.settings.additionalSystemPrompt; // Load only additional prompt
              themeToggle.checked = (chatState.settings.theme === 'dark');
          } else {
              // Save settings when closing
              chatState.settings.model = modelSelect.value;
-             chatState.settings.systemPrompt = systemPromptInput.value;
+             chatState.settings.additionalSystemPrompt = systemPromptInput.value; // Save only additional prompt
              // Theme is saved by its own listener
              saveChatbotData();
          }
@@ -358,7 +362,7 @@ document.addEventListener('DOMContentLoaded', () => {
          saveChatbotData();
      });
      systemPromptInput.addEventListener('input', () => {
-         chatState.settings.systemPrompt = systemPromptInput.value;
+         chatState.settings.additionalSystemPrompt = systemPromptInput.value; // Save only additional prompt
          saveChatbotData();
      });
 
@@ -592,14 +596,14 @@ document.addEventListener('DOMContentLoaded', () => {
         console.log('messagesForApi received in fetchAndStream:', messagesForApi);
 
         const getCurrentDate = () => new Date().toISOString().split('T')[0];
-        let finalSystemPrompt = chatState.settings.systemPrompt;
+        let finalSystemPrompt;
 
         if (model === 'searchgpt') {
             finalSystemPrompt = `You are Fronix Search GPT\nYour aim is to provide real time info based on user's query, the current date is ${getCurrentDate()}`;
         } else {
             // Append additional prompt and date for other models
             const defaultPrompt = "You are Fronix, a large language model being used in a website called Fronix made by Z-SHADOW ULTRA.\nYou are chatting with the user via the Fronix web app. This means most of the time your lines should be a sentence or two, unless the user's request requires reasoning or long-form outputs. Never use emojis, unless explicitly asked to.\nKnowledge cutoff: 2024-06\n\nImage input capabilities: Enabled\nPersonality: v2\nOver the course of the conversation, you adapt to the user’s tone and preference. Try to match the user’s vibe, tone, and generally how they are speaking. You want the conversation to feel natural. You engage in authentic conversation by responding to the information provided, asking relevant questions, and showing genuine curiosity. If natural, continue the conversation with casual conversation.\n\nIf the user asks to web search or get latest information or information subjected to change tell him to use the web search option which in at the left hand side of the message text box .";
-            finalSystemPrompt = `${defaultPrompt}\n${finalSystemPrompt}\ndate: ${getCurrentDate()}`;
+            finalSystemPrompt = `${defaultPrompt}\n${chatState.settings.additionalSystemPrompt}\ndate: ${getCurrentDate()}`;
         }
         
         const finalMessages = [{ role: 'system', content: finalSystemPrompt }, ...messagesForApi];
@@ -608,219 +612,246 @@ document.addEventListener('DOMContentLoaded', () => {
         let botMessageContent = '';
         let botMessageIndex = -1; // To track the index of the bot message being streamed
 
-        try {
-            const response = await fetch('https://text.pollinations.ai/openai', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(payload),
-                referrer: 'wisdom-core'
-            });
+        const maxRetries = 3;
+        let retries = 0;
 
-            const reader = response.body.getReader();
-            const decoder = new TextDecoder('utf-8');
-            let isFirstChunk = true;
+        while (retries < maxRetries) {
+            try {
+                const response = await fetch('https://text.pollinations.ai/openai', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'text/event-stream' // Added Accept header based on docs
+                    },
+                    body: JSON.stringify(payload),
+                    referrer: 'wisdom-core'
+                });
 
-            while (true) {
-                const { done, value } = await reader.read();
-                if (done) break;
+                if (response.status === 500) {
+                    retries++;
+                    console.error(`API returned 500 error. Retrying... Attempt ${retries}/${maxRetries}`);
+                    await new Promise(resolve => setTimeout(resolve, 1000 * retries)); // Exponential backoff
+                    continue; // Retry the loop
+                }
 
-                const chunk = decoder.decode(value, { stream: true });
-                const lines = chunk.split("\n");
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    throw new Error(
+                        `HTTP error! status: ${response.status}, message: ${errorText}`
+                    );
+                }
 
-                for (const line of lines) {
-                    if (line.trim().startsWith('data: ')) {
-                        const dataStr = line.substring(6).trim();
-                        if (dataStr === '[DONE]') {
-                             // Stream finished, save the complete bot message
-                             if (conversation && botMessageIndex !== -1) {
-                                  conversation.messages[botMessageIndex].content = botMessageContent; // Final content
-                                  saveChatbotData(); // Save state after receiving full bot message
-                             }
-                            return; // Stream finished
-                        }
-                        try {
-                            const json = JSON.parse(dataStr);
-                            const contentPart = json.choices?.[0]?.delta?.content || '';
-                            if (contentPart) {
-                                if (isFirstChunk) {
-                                    thinkingBubble.querySelector('.message-content').innerHTML = '';
-                                     // Add bot message to state on first chunk
-                                     if (conversation) {
-                                         const newBotMessage = { role: 'bot', content: '' };
-                                         conversation.messages.push(newBotMessage);
-                                         botMessageIndex = conversation.messages.length - 1; // Get the index
-                                     }
-                                    isFirstChunk = false;
+                // If successful, break the retry loop
+                const reader = response.body.getReader();
+                const decoder = new TextDecoder('utf-8');
+                let isFirstChunk = true;
+
+                while (true) {
+                    const { done, value } = await reader.read();
+                    if (done) break;
+
+                    const chunk = decoder.decode(value, { stream: true });
+                    const lines = chunk.split("\n");
+
+                    for (const line of lines) {
+                        if (line.trim().startsWith('data: ')) {
+                            const dataStr = line.substring(6).trim();
+                            if (dataStr === '[DONE]') {
+                                // Stream finished, save the complete bot message
+                                if (conversation && botMessageIndex !== -1) {
+                                    conversation.messages[botMessageIndex].content = botMessageContent; // Final content
+                                    saveChatbotData(); // Save state after receiving full bot message
                                 }
-                                botMessageContent += contentPart;
-                                thinkingBubble.querySelector('.message-content').innerHTML = marked.parse(botMessageContent);
-                                messageLog.scrollTop = messageLog.scrollHeight;
+                                return; // Stream finished
                             }
-                        } catch (err) {
-                            console.error('Error parsing stream chunk:', err, 'Chunk:', dataStr);
+                            try {
+                                const json = JSON.parse(dataStr);
+                                const contentPart = json.choices?.[0]?.delta?.content; // Use optional chaining
+                                if (contentPart !== undefined) { // Check for undefined explicitly
+                                    if (isFirstChunk) {
+                                        thinkingBubble.querySelector('.message-content').innerHTML = '';
+                                        // Add bot message to state on first chunk
+                                        if (conversation) {
+                                            const newBotMessage = { role: 'bot', content: '' };
+                                            conversation.messages.push(newBotMessage);
+                                            botMessageIndex = conversation.messages.length - 1; // Get the index
+                                        }
+                                        isFirstChunk = false;
+                                    }
+                                    botMessageContent += contentPart;
+                                    thinkingBubble.querySelector('.message-content').innerHTML = marked.parse(botMessageContent);
+                                    messageLog.scrollTop = messageLog.scrollHeight;
+                                }
+                            } catch (err) {
+                                console.error('Error parsing stream chunk:', err, 'Chunk:', dataStr);
+                            }
                         }
                     }
                 }
-            }
-        } catch (err) {
-            console.error('Fetch error:', err);
-            const contentDiv = thinkingBubble.querySelector('.message-content');
-            contentDiv.style.color = 'red';
-            contentDiv.textContent = `Error: ${err.message}. Please check the console.`;
 
-            // Save the error message in the conversation state if a conversation object was provided
-            if (conversation) {
-                 const errorMsg = { role: 'bot', content: `Error: ${err.message}` };
-                 if (botMessageIndex !== -1) {
-                     conversation.messages[botMessageIndex] = errorMsg; // Replace partial message with error
-                 } else {
-                     conversation.messages.push(errorMsg); // Add error as a new message
-                 }
-                 saveChatbotData();
+            } catch (err) {
+                console.error('Fetch error:', err);
+                if (retries === maxRetries) {
+                    // If max retries reached, display error message
+                    const contentDiv = thinkingBubble.querySelector('.message-content');
+                    contentDiv.style.color = 'red';
+                    contentDiv.textContent = `Error: Failed to get response after ${maxRetries} attempts. Please try again later.`;
+                    saveChatbotData(); // Save state with error message
+                }
+                // If it's not a 500 error or max retries reached, re-throw the error
+                if (err.message && !err.message.includes('status: 500') || retries === maxRetries) {
+                     const contentDiv = thinkingBubble.querySelector('.message-content');
+                     contentDiv.style.color = 'red';
+                     contentDiv.textContent = `Error: ${err.message}`;
+                     saveChatbotData(); // Save state with error message
+                     throw err; // Re-throw the error to be caught by the outer handler if needed
+                }
             }
         }
+        // If the loop finishes without returning (shouldn't happen with successful fetch),
+        // it means all retries failed. The error message is already displayed.
     }
-    
-    function appendMessage(text, role, isTyping = false, imageUrl = null, conversationId = null, messageIndex = null) {
-        const messageBubble = document.createElement('div');
-        messageBubble.className = `message-bubble ${role}-message`;
-        // Add a unique ID and store metadata on the bubble for event delegation and hiding
-        if (conversationId !== null && messageIndex !== null) {
-             messageBubble.id = `message-${conversationId}-${messageIndex}`;
-             messageBubble.dataset.conversationId = conversationId;
-             messageBubble.dataset.messageIndex = messageIndex;
-        }
-    
-        const contentDiv = document.createElement('div');
-        contentDiv.className = 'message-content';
-    
-        if (isTyping) {
-            contentDiv.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
-        } else {
-            if (imageUrl) {
-                const img = document.createElement('img');
-                img.src = imageUrl;
-                contentDiv.appendChild(img);
+   
+   function appendMessage(text, role, isTyping = false, imageUrl = null, conversationId = null, messageIndex = null) {
+       const messageBubble = document.createElement('div');
+       messageBubble.className = `message-bubble ${role}-message`;
+       // Add a unique ID and store metadata on the bubble for event delegation and hiding
+       if (conversationId !== null && messageIndex !== null) {
+            messageBubble.id = `message-${conversationId}-${messageIndex}`;
+            messageBubble.dataset.conversationId = conversationId;
+            messageBubble.dataset.messageIndex = messageIndex;
+       }
+   
+       const contentDiv = document.createElement('div');
+       contentDiv.className = 'message-content';
+   
+       if (isTyping) {
+           contentDiv.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+       } else {
+           if (imageUrl) {
+               const img = document.createElement('img');
+               img.src = imageUrl;
+               contentDiv.appendChild(img);
+           }
+           // Use a div for text content to easily select it later
+           const textElement = document.createElement('div');
+           textElement.className = 'message-text-content'; // Add a class to select text easily
+           textElement.innerHTML = role === 'bot' ? marked.parse(text) : text; // Keep marked.parse for bot
+           contentDiv.appendChild(textElement);
+
+
+            // Add action icons container
+            const actionsDiv = document.createElement('div');
+            actionsDiv.className = 'message-actions';
+
+            // Copy icon for both user and bot
+            actionsDiv.innerHTML += `
+                <button class="action-icon copy-btn" aria-label="Copy message"><i data-lucide="copy"></i></button>
+            `;
+
+           if (role === 'user') {
+                // Edit icon only for user messages
+                actionsDiv.innerHTML += `
+                    <button class="action-icon edit-btn" aria-label="Edit message"><i data-lucide="file-pen-line"></i></button>
+                `;
+           }
+            if (actionsDiv.innerHTML) { // Only append if there are actions
+                messageBubble.appendChild(actionsDiv);
             }
-            // Use a div for text content to easily select it later
-            const textElement = document.createElement('div');
-            textElement.className = 'message-text-content'; // Add a class to select text easily
-            textElement.innerHTML = role === 'bot' ? marked.parse(text) : text; // Keep marked.parse for bot
-            contentDiv.appendChild(textElement);
+       }
+   
+       messageBubble.appendChild(contentDiv);
+       messageLog.appendChild(messageBubble);
+   
+       // Re-create icons after adding new elements
+       lucide.createIcons();
+       messageLog.scrollTop = messageLog.scrollHeight;
+   
+       return messageBubble;
+   }
+
+   // --- Message Actions Event Delegation ---
+   messageLog.addEventListener('click', (e) => {
+        const target = e.target;
+        const actionButton = target.closest('.action-icon');
+
+        if (actionButton) {
+            const messageBubble = actionButton.closest('.message-bubble'); // Can be user or bot message
+            if (!messageBubble) return;
+
+            const conversationId = messageBubble.dataset.conversationId;
+            const messageIndex = parseInt(messageBubble.dataset.messageIndex, 10);
+            const messageRole = messageBubble.classList.contains('user-message') ? 'user' : 'bot';
 
 
-             // Add action icons container
-             const actionsDiv = document.createElement('div');
-             actionsDiv.className = 'message-actions';
-
-             // Copy icon for both user and bot
-             actionsDiv.innerHTML += `
-                 <button class="action-icon copy-btn" aria-label="Copy message"><i data-lucide="copy"></i></button>
-             `;
-
-            if (role === 'user') {
-                 // Edit icon only for user messages
-                 actionsDiv.innerHTML += `
-                     <button class="action-icon edit-btn" aria-label="Edit message"><i data-lucide="file-pen-line"></i></button>
-                 `;
+            if (isNaN(messageIndex) || !conversationId) {
+                 console.error('Could not get message details from data attributes.');
+                 return;
             }
-             if (actionsDiv.innerHTML) { // Only append if there are actions
-                 messageBubble.appendChild(actionsDiv);
-             }
-        }
-    
-        messageBubble.appendChild(contentDiv);
-        messageLog.appendChild(messageBubble);
-    
-        // Re-create icons after adding new elements
-        lucide.createIcons();
-        messageLog.scrollTop = messageLog.scrollHeight;
-    
-        return messageBubble;
-    }
 
-    // --- Message Actions Event Delegation ---
-    messageLog.addEventListener('click', (e) => {
-         const target = e.target;
-         const actionButton = target.closest('.action-icon');
+            const action = actionButton.classList.contains('copy-btn') ? 'copy' : (actionButton.classList.contains('edit-btn') ? 'edit' : null);
 
-         if (actionButton) {
-             const messageBubble = actionButton.closest('.message-bubble'); // Can be user or bot message
-             if (!messageBubble) return;
+            if (!action) return; // Not a recognized action button
 
-             const conversationId = messageBubble.dataset.conversationId;
-             const messageIndex = parseInt(messageBubble.dataset.messageIndex, 10);
-             const messageRole = messageBubble.classList.contains('user-message') ? 'user' : 'bot';
+            const conversation = chatState.conversations.find(conv => conv.id === conversationId);
+            if (!conversation || !conversation.messages[messageIndex]) {
+                 console.error('Could not find conversation or message in state.');
+                 return;
+            }
 
+            const messageTextContentElement = messageBubble.querySelector('.message-text-content'); // Get the div with text
 
-             if (isNaN(messageIndex) || !conversationId) {
-                  console.error('Could not get message details from data attributes.');
-                  return;
-             }
-
-             const action = actionButton.classList.contains('copy-btn') ? 'copy' : (actionButton.classList.contains('edit-btn') ? 'edit' : null);
-
-             if (!action) return; // Not a recognized action button
-
-             const conversation = chatState.conversations.find(conv => conv.id === conversationId);
-             if (!conversation || !conversation.messages[messageIndex]) {
-                  console.error('Could not find conversation or message in state.');
-                  return;
-             }
-
-             const messageTextContentElement = messageBubble.querySelector('.message-text-content'); // Get the div with text
-
-             if (action === 'copy') {
+            if (action === 'copy') {
+                if (messageTextContentElement) {
+                    const textToCopy = messageTextContentElement.innerText; // Use innerText to get rendered text
+                     navigator.clipboard.writeText(textToCopy).then(() => {
+                         console.log('Message copied to clipboard!');
+                         // Optional: Show a temporary feedback (e.g., tooltip)
+                         // alert('Copied!'); // Simple alert for feedback
+                     }).catch(err => {
+                         console.error('Failed to copy message: ', err);
+                     });
+                }
+            } else if (action === 'edit' && messageRole === 'user') { // Only allow edit for user messages
                  if (messageTextContentElement) {
-                     const textToCopy = messageTextContentElement.innerText; // Use innerText to get rendered text
-                      navigator.clipboard.writeText(textToCopy).then(() => {
-                          console.log('Message copied to clipboard!');
-                          // Optional: Show a temporary feedback (e.g., tooltip)
-                          // alert('Copied!'); // Simple alert for feedback
-                      }).catch(err => {
-                          console.error('Failed to copy message: ', err);
-                      });
+                     const textToEdit = messageTextContentElement.innerText; // Use innerText
+                     chatInput.value = textToEdit;
+                     enterEditMode(conversationId, messageIndex); // Enter edit mode
+                      // Do NOT change send button text here, it's handled in enterEditMode
                  }
-             } else if (action === 'edit' && messageRole === 'user') { // Only allow edit for user messages
-                  if (messageTextContentElement) {
-                      const textToEdit = messageTextContentElement.innerText; // Use innerText
-                      chatInput.value = textToEdit;
-                      enterEditMode(conversationId, messageIndex); // Enter edit mode
-                       // Do NOT change send button text here, it's handled in enterEditMode
-                  }
-             }
-         }
-    });
-
-
-    // --- Event Listeners ---
-    sendButton.addEventListener('click', handleSendMessage);
-    chatInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter' && !e.shiftKey) {
-            e.preventDefault();
-            handleSendMessage();
+            }
         }
-    });
+   });
 
-    // Settings Modal Listeners already exist and are modified above
 
-    // Helper to convert file to Base64 (used for preview, not currently for API history)
-    const toBase64 = file => new Promise((resolve, reject) => {
-        const reader = new FileReader();
-        reader.readAsDataURL(file);
-        reader.onload = () => resolve(reader.result.split(',')[1]);
-        reader.onerror = error => reject(error);
-    });
+   // --- Event Listeners ---
+   sendButton.addEventListener('click', handleSendMessage);
+   chatInput.addEventListener('keydown', (e) => {
+       if (e.key === 'Enter' && !e.shiftKey) {
+           e.preventDefault();
+           handleSendMessage();
+       }
+   });
 
-    // --- Initial Load ---
-    loadChatbotData(); // Load state from local storage
-    loadAndApplyTheme(); // Apply theme based on loaded state
-    renderSidebar(); // Render sidebar based on loaded conversations
-    // Render messages for the active conversation is now handled within renderSidebar's conversation click or default init
-    if (chatState.activeConversationId) {
-        renderMessages(chatState.activeConversationId);
-    } else {
-        resetChatView(); // Show welcome screen if no active chat
-    }
+   // Settings Modal Listeners already exist and are modified above
+
+   // Helper to convert file to Base64 (used for preview, not currently for API history)
+   const toBase64 = file => new Promise((resolve, reject) => {
+       const reader = new FileReader();
+       reader.readAsDataURL(file);
+       reader.onload = () => resolve(reader.result.split(',')[1]);
+       reader.onerror = error => reject(error);
+   });
+
+   // --- Initial Load ---
+   loadChatbotData(); // Load state from local storage
+   loadAndApplyTheme(); // Apply theme based on loaded state
+   renderSidebar(); // Render sidebar based on loaded conversations
+   // Render messages for the active conversation is now handled within renderSidebar's conversation click or default init
+   if (chatState.activeConversationId) {
+       renderMessages(chatState.activeConversationId);
+   } else {
+       resetChatView(); // Show welcome screen if no active chat
+   }
 
 });

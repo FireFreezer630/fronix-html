@@ -310,7 +310,7 @@ body { font-family: var(--font-family); background-color: var(--body-bg); color:
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: var(--sidebar-item-bg);
+    background-color: var(--sidebar-item-bg); /* Background based on theme */
     transition: .4s;
     border-radius: 34px;
 }
@@ -322,18 +322,19 @@ body { font-family: var(--font-family); background-color: var(--body-bg); color:
     width: 26px;
     left: 4px;
     bottom: 4px;
-    background-color: white;
+    background-color: var(--bot-message-bg); /* Handle color based on theme */
     transition: .4s;
     border-radius: 50%;
 }
 
 /* Checked state (dark mode on) */
 .modal-body .switch-checkbox:checked + .switch-label {
-    background-image: var(--send-gradient);
+    background-image: var(--send-gradient); /* Gradient for dark mode */
 }
 
 .modal-body .switch-checkbox:checked + .switch-label:before {
     transform: translateX(26px);
+    background-color: white; /* White handle in dark mode */
 }
 
 
