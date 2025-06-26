@@ -310,7 +310,7 @@ body { font-family: var(--font-family); background-color: var(--body-bg); color:
     left: 0;
     right: 0;
     bottom: 0;
-    background-color: #ccc; /* Default background (light mode off) */
+    background-color: var(--sidebar-item-bg);
     transition: .4s;
     border-radius: 34px;
 }
@@ -329,7 +329,7 @@ body { font-family: var(--font-family); background-color: var(--body-bg); color:
 
 /* Checked state (dark mode on) */
 .modal-body .switch-checkbox:checked + .switch-label {
-    background-color: #2196F3; /* Blue background for dark mode */
+    background-image: var(--send-gradient);
 }
 
 .modal-body .switch-checkbox:checked + .switch-label:before {

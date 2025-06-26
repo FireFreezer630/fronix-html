@@ -96,26 +96,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // --- Theme Management ---
-    const applyTheme = (darkModeEnabled) => {
-        if (darkModeEnabled) {
-            document.body.classList.add('dark-mode');
-            chatState.settings.theme = 'dark';
-        } else {
-            document.body.classList.remove('dark-mode');
-            chatState.settings.theme = 'light';
-        }
+    const applyTheme = (theme) => {
+        document.body.classList.remove('dark-mode', 'light-mode');
+        document.body.classList.add(theme);
+        chatState.settings.theme = theme;
         saveChatbotData();
     };
 
     // Apply theme on initial load (called after loadChatbotData)
     const loadAndApplyTheme = () => {
-         applyTheme(chatState.settings.theme === 'dark');
+         applyTheme(chatState.settings.theme || 'light');
          if (themeToggle) themeToggle.checked = (chatState.settings.theme === 'dark');
     };
 
     if (themeToggle) {
         themeToggle.addEventListener('change', (event) => {
-            applyTheme(event.target.checked);
+            applyTheme(event.target.checked ? 'dark-mode' : 'light');
         });
     }
 
@@ -194,12 +190,38 @@ document.addEventListener('DOMContentLoaded', () => {
             e.stopPropagation(); // Prevent click from triggering conversation link click
             const conversation = chatState.conversations.find(conv => conv.id === conversationId);
             if (conversation) {
-                const newName = prompt('Enter new conversation name:', conversation.name);
-                if (newName && newName.trim()) {
-                    conversation.name = newName.trim();
-                    saveChatbotData();
-                    renderSidebar(); // Update name in sidebar
-                }
+                const span = link.querySelector('span');
+                const currentName = conversation.name;
+                // Replace span with an input field
+                const input = document.createElement('input');
+                input.type = 'text';
+                input.value = currentName;
+                input.className = 'rename-input'; // For styling
+                
+                span.replaceWith(input);
+                input.focus();
+                input.select();
+
+                // Handle saving the new name
+                const saveName = () => {
+                    const newName = input.value.trim();
+                    if (newName && newName !== currentName) {
+                        conversation.name = newName;
+                        saveChatbotData();
+                    }
+                     renderSidebar(); // Re-render to show the updated name or revert
+                };
+
+                // Save on blur or Enter key
+                input.addEventListener('blur', saveName);
+                input.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
+                        saveName();
+                    } else if (e.key === 'Escape') {
+                         renderSidebar(); // Revert on escape
+                    }
+                });
             }
         });
 
@@ -289,13 +311,20 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- Web Search Button Logic ---
     webSearchButton.addEventListener('click', () => {
         // Logic already exists, but ensure it updates chatState.settings.model
-        if (webSearchButton.classList.toggle('active')) {
-            chatState.settings.model = 'searchgpt';
+        const isSearchActive = webSearchButton.classList.toggle('active');
+        
+        // Disable/enable inputs based on search mode
+        systemPromptInput.disabled = isSearchActive;
+        modelSelect.disabled = isSearchActive;
+
+        if (isSearchActive) {
+             chatState.settings.model = 'searchgpt';
         } else {
-            chatState.settings.model = 'openai'; // Or restore from chatState.settings.previousModel if implemented
+            chatState.settings.model = 'openai';
         }
-        modelSelect.value = chatState.settings.model; // Update dropdown visual
-        saveChatbotData(); // Save updated setting
+        
+        modelSelect.value = chatState.settings.model;
+        saveChatbotData();
         lucide.createIcons();
     });
 
@@ -541,9 +570,7 @@ document.addEventListener('DOMContentLoaded', () => {
      async function fetchAndStreamForEdit(conversation, thinkingBubble) {
          // Prepare messages for API (include history up to edited message)
          const messagesForApi = [];
-          if (chatState.settings.systemPrompt) {
-               messagesForApi.push({ role: 'system', content: chatState.settings.systemPrompt });
-          }
+          // System prompt logic is now handled inside fetchAndStream
          // Include messages up to the edited one for context
           conversation.messages.forEach(msg => {
               // For API, include image data if present
@@ -561,8 +588,22 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     // Modify fetchAndStream to save bot message to state
-    async function fetchAndStream(messages, model, thinkingBubble, conversation) {
-        const payload = { model, messages, stream: true };
+    async function fetchAndStream(messagesForApi, model, thinkingBubble, conversation) {
+
+        const getCurrentDate = () => new Date().toISOString().split('T')[0];
+        let finalSystemPrompt = chatState.settings.systemPrompt;
+
+        if (model === 'searchgpt') {
+            finalSystemPrompt = `You are Fronix Search GPT\nYour aim is to provide real time info based on user's query, the current date is ${getCurrentDate()}`;
+        } else {
+            // Append additional prompt and date for other models
+            const defaultPrompt = "You are Fronix, a large language model being used in a website called Fronix made by Z-SHADOW ULTRA.\nYou are chatting with the user via the Fronix web app. This means most of the time your lines should be a sentence or two, unless the user's request requires reasoning or long-form outputs. Never use emojis, unless explicitly asked to.\nKnowledge cutoff: 2024-06\n\nImage input capabilities: Enabled\nPersonality: v2\nOver the course of the conversation, you adapt to the user’s tone and preference. Try to match the user’s vibe, tone, and generally how they are speaking. You want the conversation to feel natural. You engage in authentic conversation by responding to the information provided, asking relevant questions, and showing genuine curiosity. If natural, continue the conversation with casual conversation.\n\nIf the user asks to web search or get latest information or information subjected to change tell him to use the web search option which in at the left hand side of the message text box .";
+            finalSystemPrompt = `${defaultPrompt}\n${finalSystemPrompt}\ndate: ${getCurrentDate()}`;
+        }
+        
+        const finalMessages = [{ role: 'system', content: finalSystemPrompt }, ...messagesForApi];
+        
+        const payload = { model, messages: finalMessages, stream: true };
         let botMessageContent = '';
         let botMessageIndex = -1; // To track the index of the bot message being streamed
 
