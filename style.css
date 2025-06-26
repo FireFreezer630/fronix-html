@@ -128,7 +128,53 @@ body { font-family: var(--font-family); background-color: var(--body-bg); color:
 /* --- Message Log & Bubbles --- */
 #message-log { width: 100%; max-width: 800px; margin: 0 auto; display: flex; flex-direction: column; gap: 24px; justify-content: flex-end; flex-grow: 1; padding: 1rem 0; }
 .message-bubble { display: flex; max-width: 85%; }
-.message-bubble.user-message { align-self: flex-end; }
+.message-bubble {
+    position: relative; /* Needed for absolute positioning of actions for all messages */
+}
+
+.message-bubble.user-message {
+    align-self: flex-end;
+}
+
+.message-bubble .message-actions {
+    position: absolute;
+    bottom: -20px; /* Adjust based on desired spacing */
+    right: 10px; /* Adjust based on desired spacing */
+    display: flex;
+    gap: 8px; /* Space between icons */
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    z-index: 1; /* Ensure icons are above other elements if needed */
+}
+
+.message-bubble:hover .message-actions {
+    opacity: 1;
+    visibility: visible;
+}
+
+.message-actions .action-icon {
+    background: transparent; /* Removed background */
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    padding: 2px;
+    color: var(--secondary-text); /* Use secondary text color for icons */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.message-actions .action-icon:hover {
+    color: var(--primary-text); /* Darken on hover */
+}
+
+.message-actions .action-icon .lucide {
+    width: 14px; /* Small icon size */
+    height: 14px;
+    stroke-width: 2;
+}
+
 .message-bubble.bot-message { align-self: flex-start; }
 .message-content { padding: 16px 20px; border-radius: 20px; font-size: 1rem; line-height: 1.6; }
 .user-message .message-content { background: var(--user-message-bg); color: white; border-top-right-radius: 4px; }
@@ -146,7 +192,74 @@ body { font-family: var(--font-family); background-color: var(--body-bg); color:
 @keyframes bounce { 0%, 80%, 100% { transform: scale(0); } 40% { transform: scale(1.0); } }
 
 /* --- Footer Input Area --- */
-.chat-input-area { flex-shrink: 0; padding: 24px 40px; display: flex; align-items: center; gap: 16px; position: relative; }
+.chat-input-area {
+    flex-shrink: 0;
+    padding: 24px 40px;
+    display: flex;
+    flex-direction: row; /* Changed back to row for horizontal alignment */
+    align-items: center;
+    gap: 16px;
+    position: relative;
+}
+
+/* Editing Bar */
+.chat-input-area .editing-bar {
+    width: calc(100% - 80px); /* Full width minus padding */
+    height: 56px; /* Same height as input-wrapper */
+    background: var(--send-gradient);
+    color: white;
+    border-radius: 16px 16px 0 0; /* Rounded top corners */
+    display: flex;
+    align-items: center;
+    justify-content: space-between; /* Space out content and close button */
+    padding: 0 16px;
+    font-size: 0.9rem;
+    font-weight: 500;
+    opacity: 0;
+    visibility: hidden;
+    transition: opacity 0.2s ease, visibility 0.2s ease;
+    transform: translateY(16px); /* Align with input-wrapper */
+    position: absolute; /* Position relative to chat-input-area */
+    top: -40px; /* Adjust to sit on top of input-wrapper after its margin */
+    box-shadow: 0 4px 15px rgba(255, 112, 67, 0.25); /* Subtle shadow */
+    z-index: 1; /* Above input wrapper */
+}
+
+/* When editing mode is active */
+.chatbot-container.editing-mode .chat-input-area .editing-bar {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0); /* Move into position */
+}
+
+.editing-bar .edit-cancel-btn {
+    background: transparent;
+    border: none;
+    color: white;
+    cursor: pointer;
+    padding: 4px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background-color 0.2s ease;
+}
+
+.editing-bar .edit-cancel-btn:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.editing-bar .edit-cancel-btn .lucide {
+    width: 18px;
+    height: 18px;
+}
+
+/* Hide message being edited */
+.message-bubble.hidden-when-editing {
+    display: none !important;
+}
+
+
 .input-wrapper { flex-grow: 1; display: flex; align-items: center; background-color: var(--bot-message-bg); border: 1px solid rgba(0,0,0,0.08); border-radius: 16px; padding: 0 16px; height: 56px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); }
 #chat-input { flex-grow: 1; border: none; outline: none; background: transparent; height: 100%; padding: 0 12px; font-size: 1rem; font-family: var(--font-family); color: var(--primary-text); }
 #chat-input::placeholder { color: var(--secondary-text); }
