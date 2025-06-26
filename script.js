@@ -100,31 +100,42 @@ document.addEventListener('DOMContentLoaded', () => {
     
     // New Chat Button Logic
     newChatButton.addEventListener('click', () => {
-        const newName = prompt("Enter a name for your new chat:", "New Conversation");
-        if (!newName || !newName.trim()) return;
+        console.log('New Chat button clicked');
+        try {
+            const newName = "New Chat"; // Automatically set a default name
+            // Removed prompt and related check as per user's feedback about disabled pop-up
 
-        // Deselect current active chat
-        const currentActive = document.querySelector('.conversation-item.active');
-        if (currentActive) currentActive.classList.remove('active');
+            // Deselect current active chat
+            const currentActive = document.querySelector('.conversation-item.active');
+            if (currentActive) currentActive.classList.remove('active');
 
-        // Create new list item
-        const newItem = document.createElement('li');
-        newItem.className = 'conversation-item active';
-        newItem.innerHTML = `
-            <a href="#" class="conversation-link">
-                <i data-lucide="message-square"></i>
-                <span>${newName.trim()}</span>
-            </a>
-            <div class="conversation-actions">
-                <button class="action-btn rename-btn" aria-label="Rename conversation"><i data-lucide="file-pen-line"></i></button>
-                <button class="action-btn delete-btn" aria-label="Delete conversation"><i data-lucide="trash-2"></i></button>
-            </div>
-        `;
-        
-        conversationList.prepend(newItem);
-        addConversationListeners(newItem);
-        lucide.createIcons();
-        resetChatView();
+            // Create new list item
+            const newItem = document.createElement('li');
+            newItem.className = 'conversation-item active';
+            newItem.innerHTML = `
+                <a href="#" class="conversation-link">
+                    <i data-lucide="message-square"></i>
+                    <span>${newName.trim()}</span>
+                </a>
+                <div class="conversation-actions">
+                    <button class="action-btn rename-btn" aria-label="Rename conversation"><i data-lucide="file-pen-line"></i></button>
+                    <button class="action-btn delete-btn" aria-label="Delete conversation"><i data-lucide="trash-2"></i></button>
+                </div>
+            `;
+
+            console.log('New conversation item created:', newItem);
+            conversationList.prepend(newItem);
+            console.log('New conversation item prepended.');
+            addConversationListeners(newItem);
+            console.log('Event listeners added to new item.');
+            lucide.createIcons();
+            console.log('Lucide icons created.');
+            resetChatView();
+            console.log('Chat view reset.');
+
+        } catch (error) {
+            console.error('Error in New Chat button click handler:', error);
+        }
     });
 
     const resetChatView = () => {
