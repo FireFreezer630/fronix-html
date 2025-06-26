@@ -27,6 +27,10 @@
     --bot-message-bg: #383838;
     --sidebar-hover-bg: #404040;
     --sidebar-active-bg: #282828;
+    background: radial-gradient(circle at bottom right, #2c3e50 0%, #4a3c5a 50%, transparent 70%); /* Deep sapphire to muted lavender */
+    background-size: 80% 80%; /* Adjust size for diffusion */
+    background-repeat: no-repeat;
+    background-position: bottom right;
     /* Keep gradients and font-family the same */
 }
 
