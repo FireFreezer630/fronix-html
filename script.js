@@ -1,0 +1,306 @@
+document.addEventListener('DOMContentLoaded', () => {
+    // --- Initialize Icons ---
+    lucide.createIcons();
+
+    // --- DOM Element References ---
+    const welcomeScreen = document.getElementById('welcome-screen');
+    const messageLog = document.getElementById('message-log');
+    const chatInput = document.getElementById('chat-input');
+    const sendButton = document.querySelector('.send-button');
+    const fileInput = document.getElementById('file-input');
+    const imagePreviewContainer = document.getElementById('image-preview-container');
+    const userProfileButton = document.querySelector('.user-profile');
+    const settingsModal = document.getElementById('settings-modal');
+    const closeSettingsButton = document.getElementById('close-settings-btn');
+    const sidebar = document.querySelector('.sidebar');
+    const sidebarToggle = document.querySelector('.sidebar-toggle-button');
+    const sidebarOverlay = document.querySelector('.sidebar-overlay');
+    const container = document.querySelector('.chatbot-container');
+    const conversationList = document.getElementById('conversation-list');
+    const newChatButton = document.querySelector('.new-chat-button');
+
+
+    // --- State Variables ---
+    let attachedFile = null;
+    let previewObjectURL = null;
+
+    // --- Sidebar & Chat Management ---
+
+    // Function to add interaction listeners to a conversation item
+    const addConversationListeners = (item) => {
+        const link = item.querySelector('.conversation-link');
+        const renameBtn = item.querySelector('.rename-btn');
+        const deleteBtn = item.querySelector('.delete-btn');
+
+        link.addEventListener('click', (e) => {
+            e.preventDefault();
+            document.querySelectorAll('.conversation-item').forEach(i => i.classList.remove('active'));
+            item.classList.add('active');
+            // In a real app, you would load this chat's history.
+            // For now, we just reset to the welcome screen.
+            resetChatView();
+        });
+
+        renameBtn.addEventListener('click', () => {
+            const span = link.querySelector('span');
+            const currentName = span.textContent;
+            const newName = prompt('Enter new conversation name:', currentName);
+            if (newName && newName.trim()) {
+                span.textContent = newName.trim();
+            }
+        });
+
+        deleteBtn.addEventListener('click', () => {
+            if (confirm('Are you sure you want to delete this conversation?')) {
+                const wasActive = item.classList.contains('active');
+                item.remove();
+                // If the active chat was deleted, select the top one or show welcome screen
+                if (wasActive && conversationList.children.length > 0) {
+                    conversationList.firstElementChild.classList.add('active');
+                } else if (conversationList.children.length === 0) {
+                    resetChatView();
+                }
+            }
+        });
+    };
+    
+    // Add listeners to the initial conversation item
+    document.querySelectorAll('.conversation-item').forEach(addConversationListeners);
+    
+    // New Chat Button Logic
+    newChatButton.addEventListener('click', () => {
+        const newName = prompt("Enter a name for your new chat:", "New Conversation");
+        if (!newName || !newName.trim()) return;
+
+        // Deselect current active chat
+        const currentActive = document.querySelector('.conversation-item.active');
+        if (currentActive) currentActive.classList.remove('active');
+
+        // Create new list item
+        const newItem = document.createElement('li');
+        newItem.className = 'conversation-item active';
+        newItem.innerHTML = `
+            <a href="#" class="conversation-link">
+                <i data-lucide="message-square"></i>
+                <span>${newName.trim()}</span>
+            </a>
+            <div class="conversation-actions">
+                <button class="action-btn rename-btn" aria-label="Rename conversation"><i data-lucide="file-pen-line"></i></button>
+                <button class="action-btn delete-btn" aria-label="Delete conversation"><i data-lucide="trash-2"></i></button>
+            </div>
+        `;
+        
+        conversationList.prepend(newItem);
+        addConversationListeners(newItem);
+        lucide.createIcons();
+        resetChatView();
+    });
+
+    const resetChatView = () => {
+        messageLog.innerHTML = '';
+        messageLog.classList.add('hidden');
+        welcomeScreen.classList.remove('hidden');
+    };
+
+    const toggleSidebar = () => {
+        const isDesktop = window.innerWidth > 900;
+        sidebar.classList.toggle('active');
+        container.classList.toggle('sidebar-open-desktop', isDesktop && sidebar.classList.contains('active'));
+        sidebarOverlay.classList.toggle('active', !isDesktop && sidebar.classList.contains('active'));
+    };
+    sidebarToggle.addEventListener('click', toggleSidebar);
+    sidebarOverlay.addEventListener('click', toggleSidebar);
+
+
+    // --- Settings Modal Logic ---
+    const toggleSettingsModal = () => {
+        settingsModal.classList.toggle('hidden');
+        lucide.createIcons();
+    };
+    userProfileButton.addEventListener('click', toggleSettingsModal);
+    closeSettingsButton.addEventListener('click', toggleSettingsModal);
+    settingsModal.addEventListener('click', (e) => {
+        if (e.target === settingsModal) toggleSettingsModal();
+    });
+
+    // --- File Handling & Preview ---
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length > 0) {
+            attachedFile = fileInput.files[0];
+            showImagePreview(attachedFile);
+        }
+    });
+
+    function showImagePreview(file) {
+        if (previewObjectURL) URL.revokeObjectURL(previewObjectURL);
+        previewObjectURL = URL.createObjectURL(file);
+        
+        imagePreviewContainer.innerHTML = '';
+        const wrapper = document.createElement('div');
+        wrapper.className = 'image-preview-wrapper';
+        
+        const img = document.createElement('img');
+        img.src = previewObjectURL;
+        
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'remove-preview-btn';
+        removeBtn.innerHTML = '<i data-lucide="x" style="width:14px; height:14px;"></i>';
+        removeBtn.onclick = () => {
+            attachedFile = null;
+            fileInput.value = '';
+            imagePreviewContainer.innerHTML = '';
+            URL.revokeObjectURL(previewObjectURL);
+            previewObjectURL = null;
+        };
+
+        wrapper.appendChild(img);
+        wrapper.appendChild(removeBtn);
+        imagePreviewContainer.appendChild(wrapper);
+        lucide.createIcons();
+    }
+
+    // --- Core Chat Logic ---
+    async function handleSendMessage() {
+        const messageText = chatInput.value.trim();
+        const imageFile = attachedFile;
+        const imageURLForBubble = previewObjectURL;
+
+        if (!messageText && !imageFile) return;
+
+        if (!welcomeScreen.classList.contains('hidden')) {
+            welcomeScreen.classList.add('hidden');
+            messageLog.classList.remove('hidden');
+        }
+
+        appendMessage(messageText, 'user', false, imageURLForBubble);
+        chatInput.value = '';
+        imagePreviewContainer.innerHTML = '';
+        attachedFile = null;
+        fileInput.value = '';
+        previewObjectURL = null;
+
+        const thinkingBubble = appendMessage('', 'bot', true);
+
+        const systemPrompt = document.getElementById('system-prompt').value.trim();
+        const selectedModel = document.getElementById('model-select').value.trim();
+        
+        const messages = [];
+        if (systemPrompt) messages.push({ role: 'system', content: systemPrompt });
+
+        const userContent = [];
+        const textContent = messageText || (imageFile ? "What's in this image?" : "");
+        if (textContent) userContent.push({ type: 'text', text: textContent });
+        
+        if (imageFile) {
+            const base64Image = await toBase64(imageFile);
+            userContent.push({ type: 'image_url', image_url: { url: `data:${imageFile.type};base64,${base64Image}` } });
+        }
+        
+        messages.push({ role: 'user', content: userContent });
+        
+        await fetchAndStream(messages, selectedModel, thinkingBubble);
+    }
+    
+    function appendMessage(text, role, isTyping = false, imageUrl = null) {
+        const messageBubble = document.createElement('div');
+        messageBubble.className = `message-bubble ${role}-message`;
+    
+        const contentDiv = document.createElement('div');
+        contentDiv.className = 'message-content';
+    
+        if (isTyping) {
+            contentDiv.innerHTML = '<div class="typing-indicator"><span></span><span></span><span></span></div>';
+        } else {
+            if (imageUrl) {
+                const img = document.createElement('img');
+                img.src = imageUrl;
+                contentDiv.appendChild(img);
+            }
+            if (text) {
+                const textElement = document.createElement('p');
+                textElement.innerHTML = role === 'bot' ? marked.parse(text) : text;
+                contentDiv.appendChild(textElement);
+            }
+        }
+    
+        messageBubble.appendChild(contentDiv);
+        messageLog.appendChild(messageBubble);
+    
+        lucide.createIcons();
+        messageLog.scrollTop = messageLog.scrollHeight;
+    
+        return messageBubble;
+    }
+    
+    // UPDATED: More robust streaming implementation
+    async function fetchAndStream(messages, model, thinkingBubble) {
+        const payload = { model, messages, stream: true };
+        
+        try {
+            const response = await fetch('https://text.pollinations.ai/openai', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(payload)
+            });
+    
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder('utf-8');
+            let botMessageContent = '';
+            let isFirstChunk = true;
+    
+            while (true) {
+                const { done, value } = await reader.read();
+                if (done) break;
+    
+                const chunk = decoder.decode(value, { stream: true });
+                const lines = chunk.split("\n");
+    
+                for (const line of lines) {
+                    if (line.trim().startsWith('data: ')) {
+                        const dataStr = line.substring(6).trim();
+                        if (dataStr === '[DONE]') {
+                            return; // Stream finished
+                        }
+                        try {
+                            const json = JSON.parse(dataStr);
+                            const contentPart = json.choices?.[0]?.delta?.content || '';
+                            if (contentPart) {
+                                if (isFirstChunk) {
+                                    thinkingBubble.querySelector('.message-content').innerHTML = '';
+                                    isFirstChunk = false;
+                                }
+                                botMessageContent += contentPart;
+                                thinkingBubble.querySelector('.message-content').innerHTML = marked.parse(botMessageContent);
+                                messageLog.scrollTop = messageLog.scrollHeight;
+                            }
+                        } catch (err) {
+                            console.error('Error parsing stream chunk:', err, 'Chunk:', dataStr);
+                        }
+                    }
+                }
+            }
+        } catch (err) {
+            console.error('Fetch error:', err);
+            const contentDiv = thinkingBubble.querySelector('.message-content');
+            contentDiv.style.color = 'red';
+            contentDiv.textContent = `Error: ${err.message}. Please check the console.`;
+        }
+    }
+
+    // --- Event Listeners ---
+    sendButton.addEventListener('click', handleSendMessage);
+    chatInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            handleSendMessage();
+        }
+    });
+
+    // Helper to convert file to Base64
+    const toBase64 = file => new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = () => resolve(reader.result.split(',')[1]);
+        reader.onerror = error => reject(error);
+    });
+});
