@@ -55,18 +55,34 @@ document.addEventListener('DOMContentLoaded', () => {
                 chatState.settings.model = chatState.settings.model || 'openai'; // Default model
                 chatState.settings.systemPrompt = chatState.settings.systemPrompt || ''; // Default system prompt
                 chatState.settings.additionalSystemPrompt = chatState.settings.additionalSystemPrompt || ''; // Default additional system prompt
-                chatState.settings.previousModel = chatState.settings.previousModel || 'openai'; // Default previous model
+                // Fix: model switching fails if web search toggled repeatedly
+                // Ensure previousModel is always valid based on the loaded/defaulted model
+                chatState.settings.previousModel = chatState.settings.model || 'openai';
                 // Ensure active conversation ID is valid or default
                  if (!chatState.conversations.some(conv => conv.id === chatState.activeConversationId)) {
                      chatState.activeConversationId = chatState.conversations.length > 0 ? chatState.conversations[0].id : null;
                  }
-
-            } else {
-                // Initialize with default state if no data found
-                initializeDefaultChatState();
-                 console.log('No local storage data found, initialized with default state.');
-            }
-        } catch (error) {
+                 console.log('Chat state loaded from local storage.'); // Moved log
+ 
+             } else {
+                 // Initialize with default state if no data found
+                 initializeDefaultChatState();
+                 console.log('No local storage data found, initialized with default state.'); // Moved log
+             }
+ 
+             // Fix: broken conversation if initial chat creation fails (Issue 5)
+             // This check should happen AFTER attempting to load, but before error handling
+             // Also incorporate the safe check for messages array (Issue 1)
+             if (!chatState.activeConversationId && (!chatState.conversations.length || (chatState.conversations.length > 0 && !Array.isArray(chatState.conversations[0].messages)))) {
+                  console.log('No active conversation and/or conversations list is empty/corrupted, initializing default chat state.'); // Added log for clarity
+                  initializeDefaultChatState();
+             }
+ 
+         } catch (error) {
+             console.error('Error loading from local storage:', error); // Moved log
+             // Initialize with default state on error
+             initializeDefaultChatState();
+             console.log('Error loading local storage data, initialized with default state.'); // Moved log
             console.error('Error loading from local storage:', error);
             // Initialize with default state on error
             initializeDefaultChatState();
@@ -76,22 +92,26 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const initializeDefaultChatState = () => {
          const initialConversationId = Date.now().toString(); // Simple unique ID
+         // Define settings first so systemPrompt is available for messages
+         const defaultSettings = {
+             theme: 'light',
+             model: 'openai',
+             systemPrompt: "You are Fronix, a large language model being used in a website called Fronix made by Z-SHADOW ULTRA.\nYou are chatting with the user via the Fronix web app. This means most of the time your lines should be a sentence or two, unless the user's request requires reasoning or long-form outputs. Never use emojis, unless explicitly asked to.\nKnowledge cutoff: 2024-06\nCurrent date: 2025-05-15\n\nImage input capabilities: Enabled\nPersonality: v2\nOver the course of the conversation, you adapt to the user’s tone and preference. Try to match the user’s vibe, tone, and generally how they are speaking. You want the conversation to feel natural. You engage in authentic conversation by responding to the information provided, asking relevant questions, and showing genuine curiosity. If natural, continue the conversation with casual conversation.\n\nIf the user asks to web search or get latest information or information subjected to change tell him to use the web search option which in at the left hand side of the message text box .",
+             additionalSystemPrompt: '' // Initialize additional system prompt
+         };
+
          chatState = {
               conversations: [
                   {
                       id: initialConversationId,
                       name: "Welcome",
                       messages: [
+                          { "role": "system", "content": defaultSettings.systemPrompt }, // Use the defined system prompt
                           { "role": "bot", "content": "Hi, User\n\nHow can I help you today?" }
                       ]
                   }
               ],
-              settings: {
-                  theme: 'light',
-                  model: 'openai',
-                  systemPrompt: "You are Fronix, a large language model being used in a website called Fronix made by Z-SHADOW ULTRA.\nYou are chatting with the user via the Fronix web app. This means most of the time your lines should be a sentence or two, unless the user's request requires reasoning or long-form outputs. Never use emojis, unless explicitly asked to.\nKnowledge cutoff: 2024-06\nCurrent date: 2025-05-15\n\nImage input capabilities: Enabled\nPersonality: v2\nOver the course of the conversation, you adapt to the user’s tone and preference. Try to match the user’s vibe, tone, and generally how they are speaking. You want the conversation to feel natural. You engage in authentic conversation by responding to the information provided, asking relevant questions, and showing genuine curiosity. If natural, continue the conversation with casual conversation.\n\nIf the user asks to web search or get latest information or information subjected to change tell him to use the web search option which in at the left hand side of the message text box .",
-                  additionalSystemPrompt: '' // Initialize additional system prompt
-              },
+              settings: defaultSettings, // Assign the defined settings object
               activeConversationId: initialConversationId
          };
          saveChatbotData(); // Save the initial state immediately
@@ -154,7 +174,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
          if (conversation && conversation.messages.length > 0) {
              conversation.messages.forEach((msg, index) => {
-                 appendMessage(msg.content, msg.role, false, msg.imageUrl, conversationId, index); // Pass message index for editing
+                 // Only append messages if the role is not 'system'
+                 if (msg.role !== 'system') {
+                     appendMessage(msg.content, msg.role, false, msg.imageUrl, conversationId, index); // Pass message index for editing
+                 }
              });
              welcomeScreen.classList.add('hidden');
              messageLog.classList.remove('hidden');
@@ -455,6 +478,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // If editing and no text/image, treat as cancel
         if (editingMessageDetails !== null && !messageText && !imageFile) {
+             console.log('Edit canceled due to empty input.');
              exitEditMode();
              return;
         }
@@ -505,8 +529,8 @@ document.addEventListener('DOMContentLoaded', () => {
         } else if (isNewChatPending || !currentConversation) {
              // Create and add new chat item on the first message or if no active conversation
              const newConversationId = Date.now().toString(); // Simple unique ID
-             const newName = messageText.substring(0, 30) + (messageText.length > 30 ? '...' : ''); // Use first part of message as name
-             if (!newName) newName = `New Chat ${chatState.conversations.length + 1}`; // Fallback name if message is only whitespace/image
+             let newName = messageText.substring(0, 30) + (messageText.length > 30 ? '...' : ''); // Use first part of message as name
+             if (!newName.trim()) newName = `New Chat ${chatState.conversations.length + 1}`; // Fallback name if message is only whitespace/image
 
              const newUserMessage = { role: 'user', content: messageText };
              if (imageURLForBubble) newUserMessage.imageUrl = imageURLForBubble;
@@ -563,11 +587,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
              saveChatbotData(); // Save state after adding user message
 
+             // Determine messages to send to API
+             let messagesToSendToApi = currentConversation.messages;
+
+             // Special handling for the first user message in the default "Welcome" chat
+             // Check if it's the default conversation and if the history now contains system + initial bot + current user message
+             if (currentConversation.name === "Welcome" && currentConversation.messages.length === 3 &&
+                 currentConversation.messages[0].role === 'system' &&
+                 currentConversation.messages[1].role === 'bot' &&
+                 currentConversation.messages[2].role === 'user') {
+                  
+                  console.log('Constructing modified payload for first message in Welcome chat (excluding initial bot greeting).');
+                  // Send only the system prompt and the current user message
+                  messagesToSendToApi = [currentConversation.messages[0], currentConversation.messages[2]];
+             } else {
+                  // For all other cases, send the full conversation history
+                  console.log('Constructing full conversation history payload.');
+                  messagesToSendToApi = currentConversation.messages;
+             }
+
+
              // Display thinking bubble and get bot response
              const thinkingBubble = appendMessage('', 'bot', true);
-             await fetchAndStream(currentConversation.messages, chatState.settings.model, thinkingBubble, currentConversation);
-         }
-     }
+             console.log('messagesToSendToApi before fetchAndStream:', messagesToSendToApi); // Add logging here
+             await fetchAndStream(messagesToSendToApi, chatState.settings.model, thinkingBubble, currentConversation);
+          }
+       }
 
 
      // New helper function to handle streaming response after edit
@@ -606,23 +651,24 @@ document.addEventListener('DOMContentLoaded', () => {
             finalSystemPrompt = `${defaultPrompt}\n${chatState.settings.additionalSystemPrompt}\ndate: ${getCurrentDate()}`;
         }
         
-        // Exclude the very first bot message if it's the initial greeting
-        const messagesToSend = messagesForApi;
-        if (messagesToSend.length > 0 && messagesToSend[0].role === 'bot' && conversation.messages.length > messagesToSend.length) {
-             // Check if the first message in messagesToSend is the very first message in the full conversation
-             // This is a heuristic; a more robust way might involve a flag on the initial message
-             const firstConversationMessage = conversation.messages[0];
-             if (firstConversationMessage.role === 'bot' && firstConversationMessage.content === messagesToSend[0].content) {
-                  console.log('Excluding initial bot greeting from API payload.');
-                  messagesToSend.shift(); // Remove the first message
-             }
-        }
-
-        const finalMessages = [{ role: 'system', content: finalSystemPrompt }, ...messagesForApi];
+        // Prepend system message only if messagesForApi doesn't already start with one
+        const finalMessages = (messagesForApi.length > 0 && messagesForApi[0].role === 'system')
+            ? messagesForApi // If it already starts with system, use as is
+            : [{ role: 'system', content: finalSystemPrompt }, ...messagesForApi]; // Otherwise, prepend system message
         
+        // Fix: Convert 'bot' roles to 'assistant' for API compatibility (Issue 2)
+        const messagesForApiCompatible = finalMessages.map(m => ({
+             role: m.role === 'bot' ? 'assistant' : m.role,
+             content: m.content,
+             // Include imageUrl if present and role is user
+             ...(m.imageUrl && m.role === 'user' && { imageUrl: m.imageUrl })
+        }));
+ 
+        console.log('Messages sent to API (roles converted):', messagesForApiCompatible); // Log the corrected array
+ 
         const payload = {
             model,
-            messages: finalMessages,
+            messages: messagesForApiCompatible, // Use the new array
             stream: true,
             token: 'a6NJMiLY9hQ5piNf' // Added token parameter
         };
